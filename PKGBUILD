@@ -1,9 +1,9 @@
 _pkgname=dwm
-pkgname=$_pkgname-larbs-git
-pkgver=6.2.r1888.0ac09e0
+pkgname=$_pkgname-fractal-git
+pkgver=0.1.r1888.0ac09e0
 pkgrel=1
-pkgdesc="Luke's build of dwm"
-url=https://github.com/LukeSmithxyz/dwm
+pkgdesc="Luke's build of dwm - fork by fractal27"
+url=https://github.com/fractal27/dwm-fractal
 arch=(i686 x86_64)
 license=(MIT)
 makedepends=(git)
@@ -13,7 +13,7 @@ optdepends=(
 	'st: terminal emulator')
 provides=($_pkgname)
 conflicts=($_pkgname)
-source=(git+https://github.com/LukeSmithxyz/dwm)
+source=(git+https://github.com/fractal27/dwm-fractal)
 sha256sums=('SKIP')
 
 pkgver() {
