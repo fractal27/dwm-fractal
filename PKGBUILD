@@ -1,6 +1,6 @@
-_pkgname=dwm
+_pkgname=dwm-fractal
 pkgname=$_pkgname-fractal-git
-pkgver=0.1.r1888.0ac09e0
+pkgver=6.5.r1938.b8e310c
 pkgrel=1
 pkgdesc="Luke's build of dwm - fork by fractal27"
 url=https://github.com/fractal27/dwm-fractal
