@@ -73,7 +73,7 @@
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-enum { SchemeNorm, SchemeSel }; /* color schemes */
+enum { SchemeNorm = 1, SchemeSel = 2, SchemeBlue = 3, SchemeGreen = 4}; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
        NetWMWindowTypeDialog, NetClientList, NetClientInfo, NetLast }; /* EWMH atoms */
@@ -870,7 +870,7 @@ dirtomon(int dir)
 void
 drawbar(Monitor *m)
 {
-	int x, w, tw = 0;
+	int x, w, tw = 0, tw_buffer = 0;
 	int boxs = drw->fonts->h / 9;
 	int boxw = drw->fonts->h / 6 + 2;
 	unsigned int i, occ = 0, urg = 0;
@@ -881,9 +881,60 @@ drawbar(Monitor *m)
 
 	/* draw status first so it can be overdrawn by tags later */
 	if (m == selmon) { /* status is only drawn on selected monitor */
+#define OVEC_L 64
 		drw_setscheme(drw, scheme[SchemeNorm]);
-		tw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
-		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
+        
+        int using_themes = 0;
+        int ovec[OVEC_L];
+        size_t ovec_l = 0;
+        size_t namelen = strlen(rawstext);
+        tw = drw_fontset_getwidth(drw,stext) + 2; /* 2px right padding */
+        copyvalidchars(stext,rawstext);
+
+        ovec[ovec_l++] = 0; // first position always at 0
+        for(size_t i = 0; i < namelen; i++){
+               if( ((unsigned char)rawstext[i] < 32) && ovec_l < OVEC_L) {
+                      if(!using_themes) using_themes = 1;
+                      ovec[ovec_l++] = i;
+               }
+        }
+        if(!using_themes){
+               drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
+        } else {
+               char buffer[namelen+1];
+
+               *buffer = '\0';
+               strncpy(buffer, stext, ovec[1]+1-1);
+
+               FILE* f = fopen("/home/anon/.local/share/dwm/dwm.log","w");
+               if(!f){
+                      fprintf(stderr,"not able to open log file.\n");
+                      f = stderr;
+               }
+               // \1 -> (set) scheme 1
+               // \2 -> (set) scheme 2
+
+               fprintf(f,"(ovec %ld) writing bar from (%i,%i), buffer: '%s'[%i->%i]\n",
+                             (long)0, m->ww - tw, 0, buffer, 0, ovec[1]);
+               
+               drw_text(drw, m->ww - tw, 0, drw_fontset_getwidth(drw,buffer), bh, 0, buffer, 0);
+               tw_buffer += drw_fontset_getwidth(drw, buffer);
+               for(size_t i = 1; i < ovec_l; i++){
+                      unsigned char scheme_id = (unsigned char)rawstext[ovec[i]];
+                      int current = ovec[i]+1;
+                      if(scheme_id - 1 < LENGTH(scheme)) drw_setscheme(drw, scheme[scheme_id]);
+                      int next = (i+1 != ovec_l) ? ovec[i+1] : namelen;
+                      *buffer = '\0';
+
+                      strncpy(buffer,&rawstext[current],next-current);
+                      buffer[next-current] = '\0';
+                      fprintf(f,"(ovec %ld) writing bar from (%i,%i), with scheme %i, buffer: '%s'[%i->%i]\n", i, m->ww - tw + tw_buffer, 0, scheme_id, buffer, current, next);
+                      drw_text(drw, m->ww - tw + tw_buffer, 0, drw_fontset_getwidth(drw, buffer), bh, 0, buffer, 0);
+                      tw_buffer += drw_fontset_getwidth(drw, buffer);
+               }
+               if(f != stderr) fclose(f);
+        }
+
 	}
 
 	for (c = m->clients; c; c = c->next) {
@@ -892,24 +943,24 @@ drawbar(Monitor *m)
 			urg |= c->tags;
 	}
 	x = 0;
+
 	for (i = 0; i < LENGTH(tags); i++) {
 		/* do not draw vacant tags */
 		if (!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
 		continue;
 
-		w = TEXTW(tags[i]);
+        w = TEXTW(tags[i]);
 		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
 		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
 		x += w;
 	}
-	w = TEXTW(m->ltsymbol);
+	// w = TEXTW(m->ltsymbol);
 	drw_setscheme(drw, scheme[SchemeNorm]);
-	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
+	// x = drw_text(drw, x, 0, 0, bh, lrpad / 2, "", 0);
 
 	if ((w = m->ww - tw - x) > bh) {
 		if (m->sel) {
 			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
-			drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
 			if (m->sel->isfloating)
 				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
 		} else {
@@ -1624,7 +1675,7 @@ run(void)
 
 void
 runAutostart(void) {
-	system("killall -q dwmblocks; dwmblocks &");
+	system(exec_once);
 }
 
 void
@@ -1960,7 +2011,7 @@ extern char **environ;
 void
 spawn(const Arg *arg)
 {
-	posix_spawnp(NULL, ((char **)arg->v)[0], NULL, NULL, (char **)arg->v, environ);
+       posix_spawnp(NULL, ((char **)arg->v)[0], NULL, NULL, (char **)arg->v, environ);
 }
 
 void
@@ -2344,10 +2395,11 @@ updatesizehints(Client *c)
 void
 updatestatus(void)
 {
-	if (!gettextprop(root, XA_WM_NAME, rawstext, sizeof(rawstext)))
-		strcpy(stext, "dwm-"VERSION);
-	else
-		copyvalidchars(stext, rawstext);
+	if (!gettextprop(root, XA_WM_NAME, rawstext, sizeof(rawstext))) {
+		strcpy(stext, "dwm-" VERSION);
+    } else {
+           copyvalidchars(stext, rawstext);
+    }
 	drawbar(selmon);
 }
 
