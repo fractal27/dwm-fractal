@@ -26,22 +26,32 @@ static char normbordercolor[]       = "#444444";
 
 static char selfgcolor[]            = "#ffffff";
 static char selbgcolor[]            = "#000000";
-static char selbordercolor[]        = "#770000";
+static char selbordercolor[]        = "#444444";
 
-static char grnfgcolor[]            = "#ffffff";
-static char grnbgcolor[]            = "#000000";
-static char grnbordercolor[]        = "#770000";
+static char memfgcolor[]            = "#89b4fa";
+static char membgcolor[]            = "#1e1e2e";
+static char membordercolor[]        = "#444444";
 
-static char blufgcolor[]            = "#ffffff";
-static char blubgcolor[]            = "#000000";
-static char blubordercolor[]        = "#770000";
+static char wtrfgcolor[]            = "#74c7ec";
+static char wtrbgcolor[]            = "#1e1e2e";
+static char wtrbordercolor[]        = "#444444";
+
+static char datefgcolor[]            = "#a6adc8";
+static char datebgcolor[]            = "#1e1e2e";
+static char datebordercolor[]        = "#444444";
+
+static char hddfgcolor[]            = "#f9e2af";
+static char hddbgcolor[]            = "#1e1e2e";
+static char hddbordercolor[]        = "#444444";
 
 static char *colors[][3] = {
        /*               fg           bg           border   */
        [SchemeNorm] = { normfgcolor, normbgcolor, normbordercolor },
        [SchemeSel]  = { selfgcolor,  selbgcolor,  selbordercolor  },
-       [SchemeGreen]= { grnfgcolor,  grnbgcolor,  grnbordercolor  },
-       [SchemeBlue] = { blufgcolor,  blubgcolor,  blubordercolor  },
+       [SchemeMem]  = { memfgcolor,  membgcolor,  membordercolor  },
+       [SchemeWeather]  = { wtrfgcolor,  wtrbgcolor,  wtrbordercolor  },
+       [SchemeDate] = { datefgcolor, datebgcolor, datebordercolor },
+       [SchemeHDD] =  { hddfgcolor,  hddbgcolor,  hddbordercolor  },
 };
 
 typedef struct {

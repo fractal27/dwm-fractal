@@ -70,10 +70,24 @@
 #define SPTAGMASK		(((1 << LENGTH(scratchpads))-1) << LENGTH(tags))
 #define TEXTW(X)                (drw_fontset_getwidth(drw, (X)) + lrpad)
 #define TRUNC(X,A,B)            (MAX((A), MIN((X), (B))))
+#ifndef DEBUG_MODE
+
+#define LOG_DEBUG(...)
+
+#elif  // DEBUG_MODE
+#define LOG_DEBUG(format, ...)       fprintf (stdlog, __BASE_FILE__ ": (DBG)   " format __VA_OPT__(,) __VA_ARGS__)
+#endif // DEBUG_MODE
+
+#define LOG_INFO(format, ...)        fprintf (stdlog, __BASE_FILE__ ": (INFO)  " format __VA_OPT__(,) __VA_ARGS__)
+#define LOG_NOTICE(format, ...)      fprintf (stdlog, __BASE_FILE__ ": (NOTICE)" format __VA_OPT__(,) __VA_ARGS__)
+#define LOG_WARNING(format, ...)     fprintf (stdlog, __BASE_FILE__ ": (WARN)  " format __VA_OPT__(,) __VA_ARGS__)
+#define LOG_ERROR(format, ...)       fprintf (stdlog, __BASE_FILE__ ": (INFO)  " format __VA_OPT__(,) __VA_ARGS__)
+
+
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-enum { SchemeNorm = 1, SchemeSel = 2, SchemeBlue = 3, SchemeGreen = 4}; /* color schemes */
+enum { SchemeNorm = 1, SchemeSel = 2, SchemeMem = 3, SchemeWeather = 4, SchemeDate = 5, SchemeHDD = 6}; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
        NetWMWindowTypeDialog, NetClientList, NetClientInfo, NetLast }; /* EWMH atoms */
@@ -332,7 +346,7 @@ static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
 
 static xcb_connection_t *xcon;
-
+static FILE* stdlog;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
@@ -904,35 +918,30 @@ drawbar(Monitor *m)
                char buffer[namelen+1];
 
                *buffer = '\0';
-               strncpy(buffer, stext, ovec[1]+1-1);
-
-               FILE* f = fopen("/home/anon/.local/share/dwm/dwm.log","w");
-               if(!f){
-                      fprintf(stderr,"not able to open log file.\n");
-                      f = stderr;
-               }
+               strncpy(buffer, stext, ovec[1]-1);
+               buffer[ovec[1]] = '\0';
                // \1 -> (set) scheme 1
                // \2 -> (set) scheme 2
 
-               fprintf(f,"(ovec %ld) writing bar from (%i,%i), buffer: '%s'[%i->%i]\n",
-                             (long)0, m->ww - tw, 0, buffer, 0, ovec[1]);
+               LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), buffer: '%s'[%i->%i]\n",
+                             (long)0, m->ww - tw, 0, buffer, 0, ovec[1]-1);
                
                drw_text(drw, m->ww - tw, 0, drw_fontset_getwidth(drw,buffer), bh, 0, buffer, 0);
                tw_buffer += drw_fontset_getwidth(drw, buffer);
+
                for(size_t i = 1; i < ovec_l; i++){
                       unsigned char scheme_id = (unsigned char)rawstext[ovec[i]];
                       int current = ovec[i]+1;
-                      if(scheme_id - 1 < LENGTH(scheme)) drw_setscheme(drw, scheme[scheme_id]);
+                      if(scheme_id - 1 < LENGTH(colors)) drw_setscheme(drw, scheme[scheme_id]);
                       int next = (i+1 != ovec_l) ? ovec[i+1] : namelen;
                       *buffer = '\0';
 
                       strncpy(buffer,&rawstext[current],next-current);
                       buffer[next-current] = '\0';
-                      fprintf(f,"(ovec %ld) writing bar from (%i,%i), with scheme %i, buffer: '%s'[%i->%i]\n", i, m->ww - tw + tw_buffer, 0, scheme_id, buffer, current, next);
+                      LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), with scheme %i, buffer: '%s'[%i->%i]\n", i, m->ww - tw + tw_buffer, 0, scheme_id, buffer, current, next);
                       drw_text(drw, m->ww - tw + tw_buffer, 0, drw_fontset_getwidth(drw, buffer), bh, 0, buffer, 0);
                       tw_buffer += drw_fontset_getwidth(drw, buffer);
                }
-               if(f != stderr) fclose(f);
         }
 
 	}
@@ -954,9 +963,9 @@ drawbar(Monitor *m)
 		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
 		x += w;
 	}
-	// w = TEXTW(m->ltsymbol);
+	w = TEXTW(m->ltsymbol);
 	drw_setscheme(drw, scheme[SchemeNorm]);
-	// x = drw_text(drw, x, 0, 0, bh, lrpad / 2, "", 0);
+	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
 
 	if ((w = m->ww - tw - x) > bh) {
 		if (m->sel) {
@@ -1903,6 +1912,13 @@ setup(void)
 	scheme = ecalloc(LENGTH(colors), sizeof(Clr *));
 	for (i = 0; i < LENGTH(colors); i++)
 		scheme[i] = drw_scm_create(drw, colors[i], 3);
+    stdlog = fopen("/home/anon/.local/share/dwm/dwm.log","w");
+    if(!stdlog){
+           stdlog = stderr;
+           LOG_ERROR("Not able to open log file: using stderr");
+    } else {
+           LOG_NOTICE("Logging enabled");
+    }
 	/* init bars */
 	updatebars();
 	updatestatus();
@@ -2605,8 +2621,9 @@ xerror(Display *dpy, XErrorEvent *ee)
 	|| (ee->request_code == X_GrabKey && ee->error_code == BadAccess)
 	|| (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
 		return 0;
-	fprintf(stderr, "dwm: fatal error: request code=%d, error code=%d\n",
+	LOG_ERROR("fatal error: request code=%d, error code=%d\n",
 		ee->request_code, ee->error_code);
+    if(stdlog != stderr) fclose(stdlog);
 	return xerrorxlib(dpy, ee); /* may call exit */
 }
 

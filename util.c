@@ -31,6 +31,6 @@ ecalloc(size_t nmemb, size_t size)
 	void *p;
 
 	if (!(p = calloc(nmemb, size)))
-		die("calloc:");
+		die("calloc: ENOMEM");
 	return p;
 }
