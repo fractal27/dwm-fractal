@@ -120,7 +120,7 @@ static const Layout layouts[] = {
 
 /* commands */
 static const char* termcmd[]  = { TERMINAL, "dvtm", NULL };
-static const char* exec_once = "killall -q dwmblocks picom; dwmblocks & picom &";
+static const char* exec_once = "killall -q dwmblocks picom; dwmblocks & picom --backend glx &";
 
 
 /*
@@ -227,13 +227,13 @@ static const Key keys[] = {
 
 	{ MODKEY,			XK_z,          incrgaps,               {.i = +3 } },
 	{ MODKEY,			XK_x,          incrgaps,               {.i = -3 } },
-	{ MODKEY,			XK_c,          spawn,                  {.v = (const char*[]){ "boomer", NULL } } },
+	// { MODKEY,			XK_c,          spawn,                  {.v = (const char*[]){ "boomer", NULL } } },
 	/* V is automatically bound above in STACKKEYS */
 	{ MODKEY,			XK_b,          togglebar,              {0} },
 	/* { MODKEY|ShiftMask,		XK_b,          spawn,                  SHCMD("") }, */
 	//{ MODKEY,			XK_n,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "vim", "-c", "VimwikiIndex", NULL } } },
-	{ MODKEY|ShiftMask,			XK_z,          spawn,                  {.v = (const char*[]){ "boomer",NULL } } },
-	{ MODKEY,			XK_n,          spawn,                  {.v = (const char*[]){ "drawop",NULL } } },
+	{ MODKEY|ShiftMask,			XK_z,          spawn,          SHCMD("~/.local/bin/boomer") },
+	{ MODKEY,			XK_n,          spawn,                  SHCMD("~/.local/bin/drawop") },
 	// { MODKEY|ShiftMask,	XK_n,          spawn,                  SHCMD(TERMINAL " -e newsboat ; pkill -RTMIN+6 dwmblocks") },
 	{ MODKEY,			XK_m,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "ncmpcpp", NULL } } },
 	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; kill -44 $(pidof dwmblocks)") },
