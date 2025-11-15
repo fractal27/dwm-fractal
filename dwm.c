@@ -6,8 +6,7 @@
  * events about window (dis-)appearance. Only one X connection at a time is
  * allowed to select for this event mask.
  *
- * The event handlers of dwm are organized in an array which is accessed
- * whenever a new event has been fetched. This allows event dispatching
+ * The event handlers of dwm are organized in an array which is accessed * whenever a new event has been fetched. This allows event dispatching
  * in O(1) time.
  *
  * Each child of the root window is called a client, except windows which have
@@ -224,6 +223,8 @@ static int getrootptr(int *x, int *y);
 static long getstate(Window w);
 static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void grabbuttons(Client *c, int focused);
+void focusnext(const Arg *arg);
+void focusprev(const Arg *arg);
 static void grabkeys(void);
 static void incnmaster(const Arg *arg);
 static void keypress(XEvent *e);
@@ -232,6 +233,7 @@ static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
 static void monocle(Monitor *m);
+static void quadlayout(Monitor *m);
 static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
 static Client *nexttiled(Client *c);
@@ -884,7 +886,7 @@ dirtomon(int dir)
 void
 drawbar(Monitor *m)
 {
-	int x, w, tw = 0, tw_buffer = 0;
+	int x, w, tw = 0, tw_buffer = 0, startx_of_status = 0;
 	int boxs = drw->fonts->h / 9;
 	int boxw = drw->fonts->h / 6 + 2;
 	unsigned int i, occ = 0, urg = 0;
@@ -913,7 +915,8 @@ drawbar(Monitor *m)
                }
         }
         if(!using_themes){
-               drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
+               startx_of_status = m->ww - tw;
+               drw_text(drw, startx_of_status, 0, tw, bh, 0, stext, 0);
         } else {
                char buffer[namelen+1];
 
@@ -942,6 +945,7 @@ drawbar(Monitor *m)
                       drw_text(drw, m->ww - tw + tw_buffer, 0, drw_fontset_getwidth(drw, buffer), bh, 0, buffer, 0);
                       tw_buffer += drw_fontset_getwidth(drw, buffer);
                }
+               startx_of_status = m->ww - tw_buffer;
         }
 
 	}
@@ -956,17 +960,20 @@ drawbar(Monitor *m)
 	for (i = 0; i < LENGTH(tags); i++) {
 		/* do not draw vacant tags */
 		if (!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
-		continue;
+               continue;
 
         w = TEXTW(tags[i]);
 		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
 		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
 		x += w;
 	}
-	w = TEXTW(m->ltsymbol);
+	w = TEXTW(m->sel->name);
 	drw_setscheme(drw, scheme[SchemeNorm]);
-	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
-    drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
+    if((volatile char*)m->sel->name != NULL && m->sel->name[0] != '\0'){
+           x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
+           drw_rect(drw, x, 0, startx_of_status - x - TEXTW("["), bh, 1, 1);
+           // LOG_ERROR("this is the start of status: %d\n", startx_of_status);
+    }
 
 	if ((w = m->ww - tw - x) > bh) {
 		if (m->sel) {
@@ -1394,6 +1401,49 @@ monocle(Monitor *m)
 		resize(c, m->wx + ov, m->wy + oh, m->ww - 2 * c->bw - 2 * ov, m->wh - 2 * c->bw - 2 * oh, 0);
 }
 
+
+
+void
+quadlayout(Monitor *m) {
+       Client *c;
+       int i = 0, n = 0;
+       int mw = m->ww;
+       int mh = m->wh;
+
+       // Count tiled clients
+       for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
+              n++;
+       if (n == 0) return;
+
+       int center_w = mw * 0.65;
+       int side_w   = mw * 0.25;
+       int h        = mh * 0.85;
+       int y        = (mh - h) / 2;
+
+       // Find index of focused window
+       int focused_i = 0;
+       for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
+              if (c == m->sel)
+                     focused_i = i;
+
+       // Reposition all clients
+       for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
+              int x;
+              if (i == focused_i) {
+                     x = (mw - center_w) / 2;
+                     resize(c, x, y, center_w - 2 * c->bw, h - 2 * c->bw, True);
+              } else {
+                     int offset = (i - focused_i) * side_w;
+                     x = (mw - side_w) / 2 + offset;
+                     resize(c, x, y + 50, side_w - 2 * c->bw, h - 100 - 2 * c->bw, True);
+              }
+       }
+}
+
+
+
+
+
 void
 motionnotify(XEvent *e)
 {
@@ -1575,19 +1625,40 @@ resize(Client *c, int x, int y, int w, int h, int interact)
 		resizeclient(c, x, y, w, h);
 }
 
+float
+lerp(float a, float b, float t)
+{
+           return a * (1.0 - t) + (b * t);
+}
+
 void
 resizeclient(Client *c, int x, int y, int w, int h)
 {
 	XWindowChanges wc;
 
-	c->oldx = c->x; c->x = wc.x = x;
-	c->oldy = c->y; c->y = wc.y = y;
-	c->oldw = c->w; c->w = wc.width = w;
-	c->oldh = c->h; c->h = wc.height = h;
-	wc.border_width = c->bw;
-	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
-	configure(c);
-	XSync(dpy, False);
+#ifdef __EXPERIMENTAL_ANIMATE_RESIZE
+    /* TODO: Broken, do not touch. this will be implemented later */
+    for(float t = 0.0; t <= 1.0; t += 0.1){
+           c->oldx = c->x; c->x = wc.x      = lerp((float)c->oldx,(float)x,t);
+           c->oldy = c->y; c->y = wc.y      = lerp((float)c->oldx,(float)y,t);
+           c->oldw = c->w; c->w = wc.width  = lerp((float)c->oldx,(float)w,t);
+           c->oldh = c->h; c->h = wc.height = lerp((float)c->oldx,(float)h,t);
+           wc.border_width = c->bw;
+           XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
+           configure(c);
+           XSync(dpy, False);
+    }
+#else 
+    c->oldx = c->x; c->x = wc.x      = x;
+    c->oldy = c->y; c->y = wc.y      = y;
+    c->oldw = c->w; c->w = wc.width  = w;
+    c->oldh = c->h; c->h = wc.height = h;
+    wc.border_width = c->bw;
+    XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
+    configure(c);
+    XSync(dpy, False);
+#endif
+
 }
 
 void
@@ -1865,10 +1936,26 @@ setmfact(const Arg *arg)
 	arrange(selmon);
 }
 
+int
+get_path(char string[], size_t size){
+       char dir_string[size];
+       unsigned int uid = getuid();
+       snprintf(dir_string,size,"/run/user/%u/dwm/",uid);
+       int ret = mkdir(dir_string, 0700);
+       if(!ret || errno == EEXIST){
+              snprintf(string,size,"%s/dwm.log",dir_string);
+              return 0; // success
+       }
+       return errno;
+
+}
+
 void
 setup(void)
 {
+#define LOGFILE_LEN 256
 	int i;
+    char logfile[LOGFILE_LEN];
 	XSetWindowAttributes wa;
 	Atom utf8string;
 
@@ -1913,12 +2000,16 @@ setup(void)
 	scheme = ecalloc(LENGTH(colors), sizeof(Clr *));
 	for (i = 0; i < LENGTH(colors); i++)
 		scheme[i] = drw_scm_create(drw, colors[i], 3);
-    stdlog = fopen("/home/anon/.local/share/dwm/dwm.log","w");
-    if(!stdlog){
+    int err;
+    if((err = get_path(logfile,LOGFILE_LEN))){
            stdlog = stderr;
-           LOG_ERROR("Not able to open log file: using stderr");
+           LOG_ERROR("Not able to open log file(%s): using stderr\n",strerror(err));
     } else {
-           LOG_NOTICE("Logging enabled");
+           stdlog = fopen(logfile, "w");
+           if(!stdlog){
+                  stdlog = stderr;
+                  LOG_ERROR("Not able to open log file(%s): using stderr\n",strerror(errno));
+           } else LOG_NOTICE("Logging enabled\n");
     }
 	/* init bars */
 	updatebars();
@@ -2014,6 +2105,26 @@ sigdwmblocks(const Arg *arg)
 	}
 }
 #endif
+
+void focusnext(const Arg *arg) {
+       if(selmon->sel == NULL) return;
+       Client *c = selmon->sel->next;
+       if (!c) c = selmon->clients; // wrap around
+       if (!c) return;
+       focus(c);
+       arrange(selmon);
+}
+
+void focusprev(const Arg *arg) {
+       Client *prev = NULL, *c;
+       if(selmon->sel != selmon->clients){
+              for (c = selmon->clients; c && c != selmon->sel; c = c->next){
+                     prev = c;
+              }
+              focus(prev);
+              arrange(selmon);
+       }
+}
 
 void
 sigchld(int unused)

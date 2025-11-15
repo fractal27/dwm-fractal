@@ -1,11 +1,13 @@
 /* See LICENSE file for copyright and license details. */
 
 /* Constants */
-#define TERMINAL "st"
-#define TERMCLASS "St"
-#define BROWSER "mullvad-browser"
+#define TERMINAL      "st"
+#define TERMCLASS     "St"
+#define BROWSER       "mullvad-browser"
 #define OTHER_BROWSER "qutebrowser"
-#define TOR_BROWSER "torbrowser-launcher"
+#define TOR_BROWSER   "torbrowser-launcher"
+#define BIN_PREFIX    "~/.local/bin/"
+// the runtime log file is at "/run/user/XXX/dwm/dwm.log"
 
 /* appearance */
 static unsigned int borderpx  = 2;        /* border pixel of windows */
@@ -20,13 +22,13 @@ static int showbar            = 1;        /* 0 means no bar */
 static int topbar             = 1;        /* 0 means bottom bar */
 static char *fonts[]          = { "Iosevka Nerd Font Mono,Iosevka NFM:size=16", "Hack:size=10:antialias=true"  };
 
-static char normbgcolor[]           = "#000000";
+static char normbgcolor[]           = "#121212";
 static char normfgcolor[]           = "#bbbbbb";
 static char normbordercolor[]       = "#444444";
 
 static char selfgcolor[]            = "#ffffff";
 static char selbgcolor[]            = "#000000";
-static char selbordercolor[]        = "#444444";
+static char selbordercolor[]        = "#eeeeee";
 
 static char memfgcolor[]            = "#89b4fa";
 static char membgcolor[]            = "#1e1e2e";
@@ -69,12 +71,14 @@ static Sp scratchpads[] = {
 /* tagging */
 static const char *tags[] = { "term", "browse1", "browse2", "monitor", "5", "6", "7", "8", "9" };
 
-static const Rule rules[0];
+static const Rule rules[] = {
 	/* xprop(1):
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	*/
 	/* class    instance      title       	 tags mask    isfloating   isterminal  noswallow  monitor */
+       { "Gimp",  NULL,         NULL,          1 << 5,            0,      0,          0,          -1 }
+};
 
 /* layout(s) */
 static float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
@@ -93,7 +97,7 @@ static const Layout layouts[] = {
 
 	{ "[M]",	monocle },              /* All windows on top of eachother */
 	{ "|M|",	centeredmaster },               /* Master in middle, slaves on sides */
-	{ ">M>",	centeredfloatingmaster },       /* Same but master floats */
+	{ ">M>",	quadlayout },       /* Same but master floats */
 
 	{ "><>",	NULL },	                /* no layout function means floating behavior */
 	{ NULL,		NULL },
@@ -119,9 +123,11 @@ static const Layout layouts[] = {
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-static const char* termcmd[]  = { TERMINAL, "dvtm", NULL };
-static const char* exec_once = "killall -q dwmblocks picom; dwmblocks & picom --backend glx &";
+static const char* termcmd[]  = { TERMINAL, NULL };
+static const char* exec_once = "killall -q dwmblocks picom feh; source ~/.fehbg & dwmblocks & picom --backend glx &";
 
+// this is not in the original, but I thought it might be useful.
+// also, I think part of this doesn't work, I have to debug this.,
 
 /*
  * Xresources preferences to load at startup
@@ -151,8 +157,11 @@ ResourcePref resources[] = {
 
 #include <X11/XF86keysym.h>
 #include "shiftview.c"
-#define DMENU_FLAGS "-b", "-l", "12", "-fn", "Adwaita Mono:size=13", "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
-#define SH_DMENU_FLAGS "-b -l 12 -fn 'Adwaita Mono:size=13'" //-m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+#define DMENU_RUN_PATH "~/.local/apps/terminal:~/.local/apps/gui"
+#define DMENU_FLAGS "-z","500","-x","300","-y","400","-l", "12", "-fn", "MathJax_Typewriter:size=25" // "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+#define SH_DMENU_FLAGS "-z 500 -x 300 -y 500 -l 12 -fn 'MathJax_Typewriter:size=25'"                  // -m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+// dmenu flags are actually equal, but I haven't changed it.
+//-m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
 
 static const Key keys[] = {
 	/* modifier                     key            function                argument */
@@ -179,8 +188,8 @@ static const Key keys[] = {
 
     // { MODKEY,			    XK_Tab,        view,                   {0} },
 	{ MODKEY,			    XK_q,          killclient,             {0} },
-    { MODKEY,               XK_o,          spawn,                  SHCMD("~/.local/bin/timer -c \"$(echo \"\" | dmenu -p \"comment\" "SH_DMENU_FLAGS")\" \"$(cat ~/.timers | dmenu "SH_DMENU_FLAGS")\" | cut -d \"#\" -f1 | xargs") } ,
-	{ MODKEY|ShiftMask,	    XK_w,          spawn,                  SHCMD("~/.local/bin/ws $(dmenu " SH_DMENU_FLAGS " < ~/.websites)") },
+    { MODKEY,               XK_o,          spawn,                  SHCMD(BIN_PREFIX "timer -c \"$(echo \"\" | dmenu -p \"comment\" " SH_DMENU_FLAGS ")\" \"$(cat ~/.timers | dmenu "SH_DMENU_FLAGS" | cut -d \"#\" -f1 | xargs)") } ,
+	{ MODKEY|ShiftMask,	    XK_w,          spawn,                  SHCMD(BIN_PREFIX "ws $(dmenu " SH_DMENU_FLAGS " < ~/.websites)") },
 	{ MODKEY|ShiftMask,		XK_q,          spawn,                  {.v = (const char*[]){ "sysact", NULL } } },
 
 	{ MODKEY,			    XK_w,          spawn,                  {.v = (const char*[]){ BROWSER, NULL } } },
@@ -193,7 +202,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,	    XK_t,          setlayout,              {.v = &layouts[1]} }, /* bstack */
 	{ MODKEY|ShiftMask,		XK_u,          setlayout,              {.v = &layouts[2]} }, /* monocle */
 	{ MODKEY,			    XK_i,          setlayout,              {.v = &layouts[3]} }, /* centeredmaster */
-	{ MODKEY|ShiftMask,		XK_i,          setlayout,              {.v = &layouts[4]} }, /* centeredfloatingmaster */
+	{ MODKEY|ShiftMask,		XK_i,          setlayout,              {.v = &layouts[4]} }, /* layout 4 */
 	// { MODKEY,			    XK_o,          incnmaster,             {.i = +1 } },
 	// { MODKEY|ShiftMask,		XK_o,          incnmaster,             {.i = -1 } },
 	{ MODKEY|ShiftMask,		XK_p,          spawn,                  SHCMD("mpc pause; pauseallmpv") },
@@ -208,7 +217,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_a,          defaultgaps,            {0} },
 	{ MODKEY,			    XK_s,          togglesticky,           {0} },
 	/* { MODKEY|ShiftMask,		XK_s,          spawn,                  SHCMD("") }, */
-	{ MODKEY,			    XK_d,          spawn,                  {.v = (const char*[]){ "dmenu_run", DMENU_FLAGS, NULL } } },
+	{ MODKEY,			    XK_d,          spawn,                  SHCMD("m-apps launch $(cat /home/ganon/.local/share/apps/apps.ttext | dmenu  -z 500 -x 300 -y 500 -l 12 -fn 'MathJax_Typewriter:size=25' | cut -d '/' -f2)") },
 	{ MODKEY|ShiftMask,		XK_d,          spawn,                  {.v = (const char*[]){ "passmenu", DMENU_FLAGS, NULL } } },
 	{ MODKEY,			    XK_f,          togglefullscr,          {0} },
 	{ MODKEY|ShiftMask,		XK_f,          setlayout,              {.v = &layouts[8]} },
@@ -227,14 +236,9 @@ static const Key keys[] = {
 
 	{ MODKEY,			XK_z,          incrgaps,               {.i = +3 } },
 	{ MODKEY,			XK_x,          incrgaps,               {.i = -3 } },
-	// { MODKEY,			XK_c,          spawn,                  {.v = (const char*[]){ "boomer", NULL } } },
-	/* V is automatically bound above in STACKKEYS */
 	{ MODKEY,			XK_b,          togglebar,              {0} },
-	/* { MODKEY|ShiftMask,		XK_b,          spawn,                  SHCMD("") }, */
-	//{ MODKEY,			XK_n,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "vim", "-c", "VimwikiIndex", NULL } } },
 	{ MODKEY|ShiftMask,			XK_z,          spawn,          SHCMD("~/.local/bin/boomer") },
 	{ MODKEY,			XK_n,          spawn,                  SHCMD("~/.local/bin/drawop") },
-	// { MODKEY|ShiftMask,	XK_n,          spawn,                  SHCMD(TERMINAL " -e newsboat ; pkill -RTMIN+6 dwmblocks") },
 	{ MODKEY,			XK_m,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "ncmpcpp", NULL } } },
 	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; kill -44 $(pidof dwmblocks)") },
 	{ MODKEY,			XK_comma,      spawn,                  {.v = (const char*[]){ "mpc", "prev", NULL } } },
@@ -242,10 +246,10 @@ static const Key keys[] = {
 	{ MODKEY,			XK_period,     spawn,                  {.v = (const char*[]){ "mpc", "next", NULL } } },
 	{ MODKEY|ShiftMask,	XK_period,     spawn,                  {.v = (const char*[]){ "mpc", "repeat", NULL } } },
 
-	{ MODKEY,			XK_Left,       focusmon,               {.i = -1 } },
-	{ MODKEY|ShiftMask,	XK_Left,       tagmon,                 {.i = -1 } },
-	{ MODKEY,			XK_Right,      focusmon,               {.i = +1 } },
-	{ MODKEY|ShiftMask,	XK_Right,      tagmon,                 {.i = +1 } },
+	{ MODKEY,			XK_Left,       focusprev,               {.i = 0 } },
+	// { MODKEY|ShiftMask,	XK_Left,       tagmon,                 {.i = -1 } },
+	{ MODKEY,			XK_Right,      focusnext,               {.i = 0 } },
+	// { MODKEY|ShiftMask,	XK_Right,      tagmon,                 {.i = +1 } },
 
 	{ MODKEY,			XK_Page_Up,    shiftview,              { .i = -1 } },
 	{ MODKEY|ShiftMask,	XK_Page_Up,    shifttag,               { .i = -1 } },
