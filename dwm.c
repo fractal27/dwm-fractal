@@ -45,6 +45,7 @@
 #include <X11/Xlib-xcb.h>
 #include <xcb/res.h>
 
+#include <stdlib.h>
 #include "drw.h"
 #include "util.h"
 
@@ -69,18 +70,21 @@
 #define SPTAGMASK		(((1 << LENGTH(scratchpads))-1) << LENGTH(tags))
 #define TEXTW(X)                (drw_fontset_getwidth(drw, (X)) + lrpad)
 #define TRUNC(X,A,B)            (MAX((A), MIN((X), (B))))
+
+
+#define LOG_BASE(log_level_str, format, ...) \
+                fprintf(stdlog, __BASE_FILE__ ": " log_level_str format __VA_OPT__(,) __VA_ARGS__)
+
+
 #ifndef DEBUG_MODE
-
 #define LOG_DEBUG(...)
-
 #elif  // DEBUG_MODE
-#define LOG_DEBUG(format, ...)       fprintf (stdlog, __BASE_FILE__ ": (DBG)   " format __VA_OPT__(,) __VA_ARGS__)
+#define LOG_DEBUG(format, ...)       LOG_BASE("(DEBUG) ", format __VA_OPT__(,) __VA_ARGS__) // fprintf (stdlog, __BASE_FILE__ ": (DBG)   " , format __VA_OPT__(,) __VA_ARGS__)
 #endif // DEBUG_MODE
-
-#define LOG_INFO(format, ...)        fprintf (stdlog, __BASE_FILE__ ": (INFO)  " format __VA_OPT__(,) __VA_ARGS__)
-#define LOG_NOTICE(format, ...)      fprintf (stdlog, __BASE_FILE__ ": (NOTICE)" format __VA_OPT__(,) __VA_ARGS__)
-#define LOG_WARNING(format, ...)     fprintf (stdlog, __BASE_FILE__ ": (WARN)  " format __VA_OPT__(,) __VA_ARGS__)
-#define LOG_ERROR(format, ...)       fprintf (stdlog, __BASE_FILE__ ": (INFO)  " format __VA_OPT__(,) __VA_ARGS__)
+#define LOG_INFO(format, ...)        LOG_BASE("(INFO)  ", format __VA_OPT__(,) __VA_ARGS__) // fprintf (stdlog, __BASE_FILE__ ": (INFO)  " , format __VA_OPT__(,) __VA_ARGS__)
+#define LOG_NOTICE(format, ...)      LOG_BASE("(NOTICE)", format __VA_OPT__(,) __VA_ARGS__) // fprintf (stdlog, __BASE_FILE__ ": (NOTICE)" , format __VA_OPT__(,) __VA_ARGS__)
+#define LOG_WARNING(format, ...)     LOG_BASE("(WARN)  ", format __VA_OPT__(,) __VA_ARGS__) // fprintf (stdlog, __BASE_FILE__ ": (WARN)  " , format __VA_OPT__(,) __VA_ARGS__)
+#define LOG_ERROR(format, ...)       LOG_BASE("(ERROR) ", format __VA_OPT__(,) __VA_ARGS__) // fprintf (stdlog, __BASE_FILE__ ": (INFO)  " , format __VA_OPT__(,) __VA_ARGS__)
 
 
 
@@ -348,7 +352,7 @@ static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
 
 static xcb_connection_t *xcon;
-static FILE* stdlog;
+FILE* stdlog;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
@@ -944,6 +948,7 @@ drawbar(Monitor *m)
                       LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), with scheme %i, buffer: '%s'[%i->%i]\n", i, m->ww - tw + tw_buffer, 0, scheme_id, buffer, current, next);
                       drw_text(drw, m->ww - tw + tw_buffer, 0, drw_fontset_getwidth(drw, buffer), bh, 0, buffer, 0);
                       tw_buffer += drw_fontset_getwidth(drw, buffer);
+                      if(i + 1 == ovec_l) tw_buffer += drw_fontset_getwidth(drw, buffer);
                }
                startx_of_status = m->ww - tw_buffer;
         }
@@ -970,9 +975,10 @@ drawbar(Monitor *m)
 	w = TEXTW(m->sel->name);
 	drw_setscheme(drw, scheme[SchemeNorm]);
     if((volatile char*)m->sel->name != NULL && m->sel->name[0] != '\0'){
+           unsigned int rectw = startx_of_status - (x + w);
+           if(w > rectw){ w = rectw; }
            x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
-           drw_rect(drw, x, 0, startx_of_status - x - TEXTW("["), bh, 1, 1);
-           // LOG_ERROR("this is the start of status: %d\n", startx_of_status);
+           drw_rect(drw, x, 0, rectw, bh, 1, 1);
     }
 
 	if ((w = m->ww - tw - x) > bh) {
@@ -2139,6 +2145,14 @@ extern char **environ;
 void
 spawn(const Arg *arg)
 {
+       LOG_INFO("spawning process: %s with arguments ",((char **)arg->v)[0]);
+       char** ptr = (char**)arg->v;
+       while(*ptr != NULL){
+              fprintf(stdlog, "`%s` ", *ptr);
+              ptr++;
+       }
+       fprintf(stdlog, "\n");
+       fflush(stdlog);
        posix_spawnp(NULL, ((char **)arg->v)[0], NULL, NULL, (char **)arg->v, environ);
 }
 
@@ -2236,20 +2250,29 @@ togglescratch(const Arg *arg)
 	}
 }
 
+double
+log_lowerbound(double x){
+       return x*(60+60*x+11*x*x)/(3*(20+30*x+12*x*x+x*x*x));
+}
+
 void
 toggletag(const Arg *arg)
 {
 	unsigned int newtags;
+    char new_bits_tags[NUMTAGS] = "";
+    char old_bits_tags[NUMTAGS] = "";
 
 	if (!selmon->sel)
 		return;
 	newtags = selmon->sel->tags ^ (arg->ui & TAGMASK);
+    LOG_INFO("Tag toggle: %u\n",(unsigned int)log_lowerbound((double)(arg->ui & TAGMASK)));
+    fflush(stdlog);
 	if (newtags) {
 		selmon->sel->tags = newtags;
 		setclienttagprop(selmon->sel);
 		focus(NULL);
 		arrange(selmon);
-	}
+	 }
 }
 
 void
@@ -2733,8 +2756,7 @@ xerror(Display *dpy, XErrorEvent *ee)
 	|| (ee->request_code == X_GrabKey && ee->error_code == BadAccess)
 	|| (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
 		return 0;
-	LOG_ERROR("fatal error: request code=%d, error code=%d\n",
-		ee->request_code, ee->error_code);
+	LOG_ERROR("fatal error: request code=%d, error code=%d\n", ee->request_code, ee->error_code);
     if(stdlog != stderr) fclose(stdlog);
 	return xerrorxlib(dpy, ee); /* may call exit */
 }
