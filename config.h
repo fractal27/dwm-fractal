@@ -7,7 +7,8 @@
 #define LAUNCH_BROWSER       {.v = (const char*[]){"mullvad-browser",NULL}}
 #define LAUNCH_OTHER_BROWSER {.v = (const char*[]){"qutebrowser",NULL}}
 #define LAUNCH_TOR_BROWSER   SHCMD("m-apps launch start-tor-browser")
-
+#define MUS_PATH "~/Personal/Mus"
+#define MUS_PLAYER "mpv"
 
 #define BIN_PREFIX    "~/.local/bin/"
 // the runtime log file is at "/run/user/XXX/dwm/dwm.log"
@@ -83,12 +84,12 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	*/
 	/* class    instance      title       	 tags mask    isfloating   isterminal  noswallow  monitor */
-       { "Gimp",         NULL,         NULL,          1 << 5,            0,      0,          0,          -1 },
-       { "st-256color",  NULL,"Simple terminal",      1 << 0,            0,      0,          0,          -1 },
-       { "qutebrowser",  NULL,         NULL,          1 << 1,            0,      0,          0,          -1 },
-       { "torbrowser",   NULL,         NULL,          1 << 1,            0,      0,          0,          -1 },
-       { "Tor Browser",  NULL,         NULL,          1 << 1,            0,      0,          0,          -1 },
-       { "obs",          NULL,         NULL,          1 << 1,            0,      0,          0,          -1 }
+       { "Gimp",         NULL,         NULL,          1 << 5 /*Tag 6*/,            0,      0,          0,          -1 },
+       { "st-256color",  NULL,"Simple terminal",      1 << 0 /*Tag 1*/,            0,      0,          0,          -1 },
+       { "qutebrowser",  NULL,         NULL,          1 << 1 /*Tag 2*/,            0,      0,          0,          -1 },
+       { "torbrowser",   NULL,         NULL,          1 << 1 /*Tag 2*/,            0,      0,          0,          -1 },
+       { "Tor Browser",  NULL,         NULL,          1 << 1 /*Tag 2*/,            0,      0,          0,          -1 },
+       { "obs",          NULL,         NULL,          1 << 3 /*Tag 4*/,            0,      0,          0,          -1 }
 };
 
 /* layout(s) */
@@ -169,8 +170,8 @@ ResourcePref resources[] = {
 #include <X11/XF86keysym.h>
 #include "shiftview.c"
 #define DMENU_RUN_PATH "~/.local/apps/terminal:~/.local/apps/gui"
-#define DMENU_FLAGS "-z","500","-x","300","-y","400","-l", "12", "-fn", "MathJax_Typewriter:size=25" // "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
-#define SH_DMENU_FLAGS "-z 500 -x 300 -y 500 -l 12 -fn 'MathJax_Typewriter:size=25'"                  // -m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+#define DMENU_FLAGS "-z","500","-x","300","-y","400","-l", "12", "-fn", "Iosevka Nerd Font:size=25" // "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+#define SH_DMENU_FLAGS "-z 500 -x 300 -y 500 -l 12 -fn 'Iosevka Nerd Font:size=25'"                  // -m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
 // dmenu flags are actually equal, but I haven't changed it.
 //-m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
 
@@ -200,7 +201,7 @@ static const Key keys[] = {
 	{ MODKEY,			    XK_q,          killclient,             {0} },
     { MODKEY,               XK_o,          spawn,                  SHCMD(BIN_PREFIX "timer -c \"$(echo | dmenu -p \"comment\" " SH_DMENU_FLAGS ")\" \"$(cat ~/.timers | dmenu "SH_DMENU_FLAGS" | cut -d \"#\" -f1 | xargs)") } ,
 	{ MODKEY|ShiftMask,	    XK_w,          spawn,                  SHCMD(BIN_PREFIX "ws $(dmenu " SH_DMENU_FLAGS " < ~/.websites)") },
-	{ MODKEY|ShiftMask,		XK_q,          spawn,                  {.v = (const char*[]){ "sysact", NULL } } },
+	{ MODKEY|ShiftMask,		XK_q,          quit,                   {.i = 1} },
 
 	{ MODKEY,			    XK_w,          spawn,                  LAUNCH_BROWSER },
 	{ MODKEY,	            XK_p,          spawn,                  LAUNCH_OTHER_BROWSER },
@@ -244,13 +245,14 @@ static const Key keys[] = {
 	{ MODKEY,			    XK_Return,     spawn,                  {.v = termcmd } },
 	{ MODKEY|ShiftMask,		XK_Return,     togglescratch,          {.ui = 0} },
 
+	{ MODKEY,			XK_q,          incrgaps,               {.i = +3 } },
 	{ MODKEY,			XK_z,          incrgaps,               {.i = +3 } },
 	{ MODKEY,			XK_x,          incrgaps,               {.i = -3 } },
 	{ MODKEY,			XK_b,          togglebar,              {0} },
 	{ MODKEY|ShiftMask,	XK_z,          spawn,                  SHCMD(BIN_PREFIX "boomer") },
 	{ MODKEY,			XK_n,          spawn,                  SHCMD(BIN_PREFIX "drawop") },
-	{ MODKEY,			XK_m,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "ncmpcpp", NULL } } },
-	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; kill -44 $(pidof dwmblocks)") },
+	{ MODKEY,			XK_m,          spawn,                  SHCMD(BIN_PREFIX "sv") },
+	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD(MUS_PLAYER " " MUS_PATH "/\"$(ls " MUS_PATH " | dmenu " SH_DMENU_FLAGS ")\"") },
 	{ MODKEY,			XK_comma,      spawn,                  {.v = (const char*[]){ "mpc", "prev", NULL } } },
 	{ MODKEY|ShiftMask,	XK_comma,      spawn,                  {.v = (const char*[]){ "mpc", "seek", "0%", NULL } } },
 	{ MODKEY,			XK_period,     spawn,                  {.v = (const char*[]){ "mpc", "next", NULL } } },

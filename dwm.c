@@ -78,7 +78,7 @@
 
 #ifndef DEBUG_MODE
 #define LOG_DEBUG(...)
-#elif  // DEBUG_MODE
+#else  // DEBUG_MODE
 #define LOG_DEBUG(format, ...)       LOG_BASE("(DEBUG) ", format __VA_OPT__(,) __VA_ARGS__) // fprintf (stdlog, __BASE_FILE__ ": (DBG)   " , format __VA_OPT__(,) __VA_ARGS__)
 #endif // DEBUG_MODE
 #define LOG_INFO(format, ...)        LOG_BASE("(INFO)  ", format __VA_OPT__(,) __VA_ARGS__) // fprintf (stdlog, __BASE_FILE__ ": (INFO)  " , format __VA_OPT__(,) __VA_ARGS__)
@@ -213,14 +213,14 @@ static Monitor *createmon(void);
 static void destroynotify(XEvent *e);
 static void detach(Client *c);
 static void detachstack(Client *c);
-static Monitor *dirtomon(int dir);
+// static Monitor *dirtomon(int dir);
 static void drawbar(Monitor *m);
 static void drawbars(void);
 static void enternotify(XEvent *e);
 static void expose(XEvent *e);
 static void focus(Client *c);
 static void focusin(XEvent *e);
-static void focusmon(const Arg *arg);
+// static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
 static int getrootptr(int *x, int *y);
@@ -230,7 +230,7 @@ static void grabbuttons(Client *c, int focused);
 void focusnext(const Arg *arg);
 void focusprev(const Arg *arg);
 static void grabkeys(void);
-static void incnmaster(const Arg *arg);
+// static void incnmaster(const Arg *arg);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
 static void manage(Window w, XWindowAttributes *wa);
@@ -251,7 +251,7 @@ static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
 static void restack(Monitor *m);
 static void run(void);
-static void runAutostart(void);
+static void runExecOnce(void);
 static void scan(void);
 static int sendevent(Client *c, Atom proto);
 static void sendmon(Client *c, Monitor *m);
@@ -274,7 +274,7 @@ static void sigterm(int unused);
 static void spawn(const Arg *arg);
 static int stackpos(const Arg *arg);
 static void tag(const Arg *arg);
-static void tagmon(const Arg *arg);
+// static void tagmon(const Arg *arg);
 static void togglebar(const Arg *arg);
 static void togglefloating(const Arg *arg);
 static void togglescratch(const Arg *arg);
@@ -872,20 +872,19 @@ detachstack(Client *c)
 	}
 }
 
-Monitor *
-dirtomon(int dir)
-{
-	Monitor *m = NULL;
-
-	if (dir > 0) {
-		if (!(m = selmon->next))
-			m = mons;
-	} else if (selmon == mons)
-		for (m = mons; m->next; m = m->next);
-	else
-		for (m = mons; m->next != selmon; m = m->next);
-	return m;
-}
+// Monitor *
+// dirtomon(int dir)
+// {
+	// Monitor *m = NULL;
+	// if (dir > 0) {
+	//      if (!(m = selmon->next))
+	//           m = mons;
+	//      } else if (selmon == mons)
+    //      for (m = mons; m->next; m = m->next);
+	// else
+    //      for (m = mons; m->next != selmon; m = m->next);
+	// return m;
+// }
 
 void
 drawbar(Monitor *m)
@@ -1072,19 +1071,18 @@ focusin(XEvent *e)
 		setfocus(selmon->sel);
 }
 
-void
-focusmon(const Arg *arg)
-{
-	Monitor *m;
-
-	if (!mons->next)
-		return;
-	if ((m = dirtomon(arg->i)) == selmon)
-		return;
-	unfocus(selmon->sel, 0);
-	selmon = m;
-	focus(NULL);
-}
+// void
+// focusmon(const Arg *arg)
+// {
+	// Monitor *m;
+	// if (!mons->next)
+		// return;
+	// if ((m = dirtomon(arg->i)) == selmon)
+		// return;
+	// unfocus(selmon->sel, 0);
+	// selmon = m;
+	// focus(NULL);
+// }
 
 void
 focusstack(const Arg *arg)
@@ -1231,12 +1229,12 @@ grabkeys(void)
 	}
 }
 
-void
-incnmaster(const Arg *arg)
-{
-	selmon->nmaster = MAX(selmon->nmaster + arg->i, 0);
-	arrange(selmon);
-}
+// void
+// incnmaster(const Arg *arg)
+// {
+	// selmon->nmaster = MAX(selmon->nmaster + arg->i, 0);
+	// arrange(selmon);
+// }
 
 #ifdef XINERAMA
 static int
@@ -1761,7 +1759,7 @@ run(void)
 }
 
 void
-runAutostart(void) {
+runExecOnce(void) {
 	system(exec_once);
 }
 
@@ -2177,13 +2175,13 @@ tag(const Arg *arg)
 	}
 }
 
-void
-tagmon(const Arg *arg)
-{
-	if (!selmon->sel || !mons->next)
-		return;
-	sendmon(selmon->sel, dirtomon(arg->i));
-}
+// void
+// tagmon(const Arg *arg)
+// {
+	// if (!selmon->sel || !mons->next)
+		// return;
+	// sendmon(selmon->sel, dirtomon(arg->i));
+// }
 
 void
 togglebar(const Arg *arg)
@@ -2259,8 +2257,8 @@ void
 toggletag(const Arg *arg)
 {
 	unsigned int newtags;
-    char new_bits_tags[NUMTAGS] = "";
-    char old_bits_tags[NUMTAGS] = "";
+    // char new_bits_tags[NUMTAGS] = "";
+    // char old_bits_tags[NUMTAGS] = "";
 
 	if (!selmon->sel)
 		return;
@@ -2876,7 +2874,7 @@ main(int argc, char *argv[])
 		die("pledge");
 #endif /* __OpenBSD__ */
 	scan();
-	runAutostart();
+	runExecOnce();
 	run();
 	if(restart) execvp(argv[0], argv);
 	cleanup();

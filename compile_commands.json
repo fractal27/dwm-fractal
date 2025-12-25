@@ -1,0 +1,65 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-g",
+      "-std=c23",
+      "-pedantic",
+      "-Wall",
+      "-O0",
+      "-I/usr/X11R6/include",
+      "-I/usr/include/freetype2",
+      "-D_DEFAULT_SOURCE",
+      "-D_BSD_SOURCE",
+      "-D_XOPEN_SOURCE=700L",
+      "-DVERSION=\"6.6\"",
+      "-DXINERAMA",
+      "drw.c"
+    ],
+    "directory": "/home/ganon/.local/src/dwm-fractal",
+    "file": "/home/ganon/.local/src/dwm-fractal/drw.c"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-g",
+      "-std=c23",
+      "-pedantic",
+      "-Wall",
+      "-O0",
+      "-I/usr/X11R6/include",
+      "-I/usr/include/freetype2",
+      "-D_DEFAULT_SOURCE",
+      "-D_BSD_SOURCE",
+      "-D_XOPEN_SOURCE=700L",
+      "-DVERSION=\"6.6\"",
+      "-DXINERAMA",
+      "dwm.c"
+    ],
+    "directory": "/home/ganon/.local/src/dwm-fractal",
+    "file": "/home/ganon/.local/src/dwm-fractal/dwm.c"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-g",
+      "-std=c23",
+      "-pedantic",
+      "-Wall",
+      "-O0",
+      "-I/usr/X11R6/include",
+      "-I/usr/include/freetype2",
+      "-D_DEFAULT_SOURCE",
+      "-D_BSD_SOURCE",
+      "-D_XOPEN_SOURCE=700L",
+      "-DVERSION=\"6.6\"",
+      "-DXINERAMA",
+      "util.c"
+    ],
+    "directory": "/home/ganon/.local/src/dwm-fractal",
+    "file": "/home/ganon/.local/src/dwm-fractal/util.c"
+  }
+]
