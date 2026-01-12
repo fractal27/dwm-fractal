@@ -933,7 +933,7 @@ drawbar(Monitor *m)
                              (long)0, m->ww - tw, 0, buffer, 0, ovec[1]-1);
                
                drw_text(drw, m->ww - tw, 0, drw_fontset_getwidth(drw,buffer), bh, 0, buffer, 0);
-               tw_buffer += drw_fontset_getwidth(drw, buffer);
+               tw_buffer += drw_fontset_getwidth(drw, buffer)+10;
 
                for(size_t i = 1; i < ovec_l; i++){
                       unsigned char scheme_id = (unsigned char)rawstext[ovec[i]];
