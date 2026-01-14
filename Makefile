@@ -16,6 +16,9 @@ ${OBJ}: config.h config.mk
 dwm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
+debug:
+	$(MAKE) -B DEBUG=1
+
 clean:
 	rm -f dwm ${OBJ} dwm-${VERSION}.tar.gz *.orig *.rej
 

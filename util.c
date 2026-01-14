@@ -1,8 +1,11 @@
 /* See LICENSE file for copyright and license details. */
+#define _GNU_SOURCE
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "util.h"
 
@@ -34,3 +37,5 @@ ecalloc(size_t nmemb, size_t size)
 		die("calloc: ENOMEM");
 	return p;
 }
+
+

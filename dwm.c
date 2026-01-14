@@ -19,6 +19,7 @@
  *
  * To understand everything else, start reading main().
  */
+#define _GNU_SOURCE 
 #include <errno.h>
 #include <locale.h>
 #include <signal.h>
@@ -27,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <spawn.h>
+// #include <spawn.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <X11/cursorfont.h>
@@ -889,7 +890,7 @@ detachstack(Client *c)
 void
 drawbar(Monitor *m)
 {
-	int x, w, tw = 0, tw_buffer = 0, startx_of_status = 0;
+	int x, w, tw = 0, tw_buffer = 1, startx_of_status = 0;
 	int boxs = drw->fonts->h / 9;
 	int boxw = drw->fonts->h / 6 + 2;
 	unsigned int i, occ = 0, urg = 0;
@@ -924,16 +925,17 @@ drawbar(Monitor *m)
                char buffer[namelen+1];
 
                *buffer = '\0';
-               strncpy(buffer, stext, ovec[1]-1);
+               strncpy(buffer, stext, ovec[1]+1);
                buffer[ovec[1]] = '\0';
                // \1 -> (set) scheme 1
                // \2 -> (set) scheme 2
 
+               LOG_DEBUG("----------------- starting color drawing bar ------------\n");
                LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), buffer: '%s'[%i->%i]\n",
-                             (long)0, m->ww - tw, 0, buffer, 0, ovec[1]-1);
+                             (long)0, m->ww - tw, 0, buffer, 0, ovec[1]+1);
                
                drw_text(drw, m->ww - tw, 0, drw_fontset_getwidth(drw,buffer), bh, 0, buffer, 0);
-               tw_buffer += drw_fontset_getwidth(drw, buffer)+10;
+               tw_buffer += drw_fontset_getwidth(drw, buffer);
 
                for(size_t i = 1; i < ovec_l; i++){
                       unsigned char scheme_id = (unsigned char)rawstext[ovec[i]];
@@ -1760,7 +1762,9 @@ run(void)
 
 void
 runExecOnce(void) {
-	system(exec_once);
+	for(Arg** to_exec = exec_once; *to_exec != NULL; to_exec++){
+		spawn(*to_exec);
+	}
 }
 
 void
@@ -2140,6 +2144,52 @@ sigchld(int unused)
 
 extern char **environ;
 
+int process_start(char* const* command, FILE* stdout_redirect_to, FILE* stderr_redirect_to, int do_wait) {
+	pid_t cpid;
+
+
+	cpid = fork();
+	if (cpid == -1) {
+		perror("fork");
+		exit(EXIT_FAILURE);
+	}
+
+	if (cpid == 0) { // Child process
+
+		stdout = stdout_redirect_to;
+		stderr = stderr_redirect_to;
+
+		// Execute the program
+		execvpe(*command,command,environ);
+
+		// If exec fails
+		LOG_ERROR("environ:\n");
+		char** ptr = (char**)environ;
+		while(*ptr != NULL){
+			fprintf(stdlog, "`%s` ", *ptr);
+			ptr++;
+		}
+		fprintf(stdlog, "\n");
+		fflush(stdlog);
+		perror("execl");
+		exit(EXIT_FAILURE);
+	} else if(do_wait){ // Parent process
+			 // Close the write end of the pipe
+		int status;
+		waitpid(cpid, &status, 0); // Wait for the child process
+		if (WIFEXITED(status)) {
+			int exitStatus = WEXITSTATUS(status);
+			if (exitStatus == 0) {
+				// printf("Program exited successfully.\n");
+				return 0;
+			} else {
+				// printf("Program exited with status: %d\n", exitStatus);
+				return exitStatus;
+			}
+		}
+	}
+	return 0;
+}
 void
 spawn(const Arg *arg)
 {
@@ -2151,7 +2201,7 @@ spawn(const Arg *arg)
        }
        fprintf(stdlog, "\n");
        fflush(stdlog);
-       posix_spawnp(NULL, ((char **)arg->v)[0], NULL, NULL, (char **)arg->v, environ);
+	   process_start((char *const*)arg->v,NULL,stdlog,0);
 }
 
 void

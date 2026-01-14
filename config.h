@@ -36,26 +36,26 @@ static char selbordercolor[]        = "#eeeeee";
 
 static char memfgcolor[]            = "#89b4fa";
 static char membgcolor[]            = "#1e1e2e";
-static char membordercolor[]        = "#444444";
+static char membordercolor[]        = "#eeeeee";
 
 static char wtrfgcolor[]            = "#74c7ec";
 static char wtrbgcolor[]            = "#1e1e2e";
-static char wtrbordercolor[]        = "#444444";
+static char wtrbordercolor[]        = "#eeeeee";
 
 static char datefgcolor[]            = "#a6adc8";
 static char datebgcolor[]            = "#1e1e2e";
-static char datebordercolor[]        = "#444444";
+static char datebordercolor[]        = "#eeeeee";
 
 static char hddfgcolor[]            = "#f9e2af";
 static char hddbgcolor[]            = "#1e1e2e";
-static char hddbordercolor[]        = "#444444";
+static char hddbordercolor[]        = "#eeeeee";
 
 static char *colors[][3] = {
        /*               fg           bg           border   */
        [SchemeNorm] = { normfgcolor, normbgcolor, normbordercolor },
        [SchemeSel]  = { selfgcolor,  selbgcolor,  selbordercolor  },
        [SchemeMem]  = { memfgcolor,  membgcolor,  membordercolor  },
-       [SchemeWeather]  = { wtrfgcolor,  wtrbgcolor,  wtrbordercolor  },
+       // [SchemeWeather]  = { wtrfgcolor,  wtrbgcolor,  wtrbordercolor  },
        [SchemeDate] = { datefgcolor, datebgcolor, datebordercolor },
        [SchemeHDD] =  { hddfgcolor,  hddbgcolor,  hddbordercolor  },
 };
@@ -133,13 +133,21 @@ static const Layout layouts[] = {
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
-
 /* commands */
 static const char* termcmd[]  = { TERMINAL, NULL };
-static const char* exec_once = "killall -q dwmblocks picom feh;"
-							"~/.fehbg &"
-							"dwmblocks &"
-							"picom --corner-radius 10 --backend glx -f&";
+static Arg* exec_once[] = {
+	// (Arg[]){ SHCMD("killall -q dwmblocks picom") },
+	(Arg[]){ { .v = (const char*[]){ BIN_PREFIX  "dwmblocks", 0} } },
+	(Arg[]){ { .v = (const char*[]){ "picom",
+		"--corner-radius", "10", 
+		"--backend", "glx", 
+		"-f",
+		"--fade-in-step", "0.08",
+		"-e", "1.0",
+		0}
+	} },
+	NULL
+};
 
 // this is not in the original, but I thought it might be useful.
 // also, I think part of this doesn't work, I have to debug this.,
@@ -191,7 +199,7 @@ static const Key keys[] = {
 	TAGKEYS(			    XK_7,          6)
 	TAGKEYS(			    XK_8,          7)
 	TAGKEYS(			    XK_9,          8)
-	{ MODKEY,			    XK_u,      	spawn,	               	   SHCMD("cat ~/.emojis.txt | dmenu | cut -d '|' -f1 | xclip") },
+	{ MODKEY,			    XK_u,          spawn,	               	   SHCMD("cat ~/.emojis.txt | dmenu | cut -d '|' -f1 | xclip") },
 	{ MODKEY,			    XK_apostrophe, spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-; kill -44 $(pidof dwmblocks)") },
 	{ MODKEY|ShiftMask,		XK_apostrophe, spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 15%-; kill -44 $(pidof dwmblocks)") },
 	{ MODKEY,			    XK_minus,      spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+; kill -44 $(pidof dwmblocks)") },
