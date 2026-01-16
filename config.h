@@ -14,6 +14,11 @@
 // the runtime log file is at "/run/user/XXX/dwm/dwm.log"
 
 /* appearance */
+static unsigned int default_corner_radius  = 18;
+static unsigned int seltag_corner_radius  = 25;
+static unsigned int tags_corner_radius  = 18;
+static unsigned int blocks_corner_radius  = 18;
+										  /* rounded border of windows */
 static unsigned int borderpx  = 2;        /* border pixel of windows */
 static unsigned int snap      = 32;       /* snap pixel */
 static unsigned int gappih    = 20;       /* horiz inner gap between windows */
@@ -27,8 +32,12 @@ static int topbar             = 1;        /* 0 means bottom bar */
 static char *fonts[]          = { "Iosevka Nerd Font Mono,Iosevka NFM:size=16", "Hack:size=10:antialias=true"  };
 
 static char normbgcolor[]           = "#121212";
-static char normfgcolor[]           = "#bbbbbb";
-static char normbordercolor[]       = "#444444";
+static char normfgcolor[]           = "#999999";
+#ifdef DEBUG_MODE
+static char normbordercolor[]       = "#ff0000";
+#else
+static char normbordercolor[]       = "#222222";
+#endif // DEBUG_MODE
 
 static char selfgcolor[]            = "#ffffff";
 static char selbgcolor[]            = "#000000";
@@ -133,13 +142,14 @@ static const Layout layouts[] = {
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
+#define str(c) #c
+
 /* commands */
 static const char* termcmd[]  = { TERMINAL, NULL };
 static Arg* exec_once[] = {
 	// (Arg[]){ SHCMD("killall -q dwmblocks picom") },
-	(Arg[]){ { .v = (const char*[]){ BIN_PREFIX  "dwmblocks", 0} } },
 	(Arg[]){ { .v = (const char*[]){ "picom",
-		"--corner-radius", "10", 
+		"--corner-radius", str(default_corner_radius/2), 
 		"--backend", "glx", 
 		"-f",
 		"--fade-in-step", "0.08",

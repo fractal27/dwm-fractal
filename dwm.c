@@ -920,7 +920,7 @@ drawbar(Monitor *m)
         }
         if(!using_themes){
                startx_of_status = m->ww - tw;
-               drw_text(drw, startx_of_status, 0, tw, bh, 0, stext, 0);
+               drw_text(drw, startx_of_status, 0, tw, bh, 0, stext, 0, blocks_corner_radius, blocks_corner_radius);
         } else {
                char buffer[namelen+1];
 
@@ -934,22 +934,24 @@ drawbar(Monitor *m)
                LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), buffer: '%s'[%i->%i]\n",
                              (long)0, m->ww - tw, 0, buffer, 0, ovec[1]+1);
                
-               drw_text(drw, m->ww - tw, 0, drw_fontset_getwidth(drw,buffer), bh, 0, buffer, 0);
+               drw_text(drw, m->ww - tw, 0, drw_fontset_getwidth(drw,buffer), bh, 0, buffer, 0, blocks_corner_radius, blocks_corner_radius);
                tw_buffer += drw_fontset_getwidth(drw, buffer);
 
                for(size_t i = 1; i < ovec_l; i++){
                       unsigned char scheme_id = (unsigned char)rawstext[ovec[i]];
                       int current = ovec[i]+1;
+					  int islast = (i + 1 == ovec_l);
+
                       if(scheme_id - 1 < LENGTH(colors)) drw_setscheme(drw, scheme[scheme_id]);
                       int next = (i+1 != ovec_l) ? ovec[i+1] : namelen;
                       *buffer = '\0';
 
                       strncpy(buffer,&rawstext[current],next-current);
                       buffer[next-current] = '\0';
+					  unsigned int buffer_width = drw_fontset_getwidth(drw, buffer);
                       LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), with scheme %i, buffer: '%s'[%i->%i]\n", i, m->ww - tw + tw_buffer, 0, scheme_id, buffer, current, next);
-                      drw_text(drw, m->ww - tw + tw_buffer, 0, drw_fontset_getwidth(drw, buffer), bh, 0, buffer, 0);
-                      tw_buffer += drw_fontset_getwidth(drw, buffer);
-                      if(i + 1 == ovec_l) tw_buffer += drw_fontset_getwidth(drw, buffer);
+					  drw_text(drw, m->ww - tw + tw_buffer, 0, buffer_width, bh, 0, buffer, 0, blocks_corner_radius, blocks_corner_radius);
+                      tw_buffer += (islast+1) * buffer_width;
                }
                startx_of_status = m->ww - tw_buffer;
         }
@@ -965,12 +967,15 @@ drawbar(Monitor *m)
 
 	for (i = 0; i < LENGTH(tags); i++) {
 		/* do not draw vacant tags */
-		if (!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
+		int is_tab_selected = m->tagset[m->seltags] & 1 << i;
+		if (!(occ & 1 << i || is_tab_selected))
                continue;
 
         w = TEXTW(tags[i]);
-		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
+		drw_setscheme(drw, scheme[is_tab_selected ? SchemeSel : SchemeNorm]);
+		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i, 
+				is_tab_selected?seltag_corner_radius:tags_corner_radius,
+				is_tab_selected?seltag_corner_radius:tags_corner_radius);
 		x += w;
 	}
 	w = TEXTW(m->sel->name);
@@ -978,7 +983,7 @@ drawbar(Monitor *m)
     if((volatile char*)m->sel->name != NULL && m->sel->name[0] != '\0'){
            unsigned int rectw = startx_of_status - (x + w);
            if(w > rectw){ w = rectw; }
-           x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
+           x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0, 0, 0);
            drw_rect(drw, x, 0, rectw, bh, 1, 1);
     }
 

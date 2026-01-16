@@ -8,6 +8,8 @@
 #include "drw.h"
 #include "util.h"
 
+
+#define PI 3.141592653589
 #define UTF_INVALID 0xFFFD
 #define UTF_SIZ     4
 
@@ -237,8 +239,9 @@ drw_rect(Drw *drw, int x, int y, unsigned int w, unsigned int h, int filled, int
 		XDrawRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w - 1, h - 1);
 }
 
-int
-drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lpad, const char *text, int invert)
+
+	int
+drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lpad, const char *text, int invert, int round_lborder, int round_rborder)
 {
 	int i, ty, ellipsis_x = 0;
 	unsigned int tmpw, ew, ellipsis_w = 0, ellipsis_len;
@@ -264,9 +267,32 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
 		w = invert ? invert : ~invert;
 	} else {
 		XSetForeground(drw->dpy, drw->gc, drw->scheme[invert ? ColFg : ColBg].pixel);
-		XFillRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w, h);
+		XFillRectangle(drw->dpy,drw->drawable, drw->gc, x, y, w, h);
 		XSetForeground(drw->dpy, drw->gc, drw->scheme[ColBorder].pixel);
-		XDrawRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w, h);
+		if(!round_rborder && !round_lborder){
+			XDrawRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w-1, h-1);
+		} else {
+			int start_border_x = x + round_lborder/2 - 1;
+			int end_border_x = x + w - round_rborder/2 + 1;
+
+			XDrawLine(drw->dpy, drw->drawable, drw->gc, start_border_x,	y,
+														end_border_x,	y);
+			XDrawLine(drw->dpy, drw->drawable, drw->gc, start_border_x,	y + h - 1,
+														end_border_x,	y + h - 1);
+			if(round_lborder){
+				XDrawLine(drw->dpy, drw->drawable, drw->gc, x, y + round_lborder/2, x, h - round_lborder/2);
+				XDrawArc(drw->dpy, drw->drawable, drw->gc, x + 1, y, round_lborder, round_lborder, 90*64, 90*64);
+				XDrawArc(drw->dpy, drw->drawable, drw->gc, x + 1, y + (h - round_lborder), round_lborder, round_lborder, 180*64, 90*64);
+			} 
+			if(round_rborder){
+				XDrawLine(drw->dpy, drw->drawable, drw->gc, x + w - 1, y + round_rborder/2,
+															x + w - 1, y + h - round_rborder/2 + 1);
+				XDrawArc(drw->dpy, drw->drawable, drw->gc, x + w - 1 - round_rborder, y + (h - round_rborder), round_rborder, round_rborder, 270*64, 90*64);
+				XDrawArc(drw->dpy, drw->drawable, drw->gc, x + w - 1 - round_rborder, y, round_rborder, round_rborder, 0*64, 90*64);
+			}
+		}
+
+		XSetForeground(drw->dpy, drw->gc, drw->scheme[invert ? ColBg: ColFg].pixel);
 		d = XftDrawCreate(drw->dpy, drw->drawable,
 		                  DefaultVisual(drw->dpy, drw->screen),
 		                  DefaultColormap(drw->dpy, drw->screen));
@@ -330,7 +356,7 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
 			w -= ew;
 		}
 		if (render && overflow)
-			drw_text(drw, ellipsis_x, y, ellipsis_w, h, 0, "...", invert);
+			drw_text(drw, ellipsis_x, y, ellipsis_w, h, 0, "...", invert, round_lborder, round_rborder);
 
 		if (!*text || overflow) {
 			break;
@@ -404,7 +430,7 @@ drw_fontset_getwidth(Drw *drw, const char *text)
 {
 	if (!drw || !drw->fonts || !text)
 		return 0;
-	return drw_text(drw, 0, 0, 0, 0, 0, text, 0);
+	return drw_text(drw, 0, 0, 0, 0, 0, text, 0, 0, 0);
 }
 
 unsigned int
@@ -412,7 +438,7 @@ drw_fontset_getwidth_clamp(Drw *drw, const char *text, unsigned int n)
 {
 	unsigned int tmp = 0;
 	if (drw && drw->fonts && text && n)
-		tmp = drw_text(drw, 0, 0, 0, 0, 0, text, n);
+		tmp = drw_text(drw, 0, 0, 0, 0, 0, text, n, 0, 0);
 	return MIN(n, tmp);
 }
 
