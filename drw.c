@@ -9,7 +9,6 @@
 #include "util.h"
 
 
-#define PI 3.141592653589
 #define UTF_INVALID 0xFFFD
 #define UTF_SIZ     4
 

@@ -1,7 +1,9 @@
 /* See LICENSE file for copyright and license details. */
+/* NOTE: the runtime log file is at "$XDG_RUNTIME_DIR/dwm/dwm.log" */
 
 /* Constants */
 #define TERMINAL      "st"
+#define EDITOR        "vim"
 #define TERMCLASS     "St"
 #define EMU_ROMS      "~/Downloads/emu-roms"
 #define LAUNCH_BROWSER       {.v = (const char*[]){"mullvad-browser",NULL}}
@@ -11,45 +13,54 @@
 #define MUS_PLAYER "mpv"
 
 #define BIN_PREFIX    "~/.local/bin/"
-// the runtime log file is at "/run/user/XXX/dwm/dwm.log"
 
 /* appearance */
-static unsigned int default_corner_radius  = 18;
-static unsigned int seltag_corner_radius  = 25;
-static unsigned int tags_corner_radius  = 18;
-static unsigned int blocks_corner_radius  = 18;
-										  /* rounded border of windows */
+static unsigned int default_corner_diameter = 18; //18; /* rounded border of windows */
+static unsigned int seltag_corner_diameter  = 16; //12;  /* rounded border of selected tag in bar */
+static unsigned int tags_corner_diameter    = 20; //6;    /* rounded border of non-selected tags in bar */
+static unsigned int blocks_corner_diameter  = 6; //1;  /* rounded border of in bar */
+
+										  
 static unsigned int borderpx  = 2;        /* border pixel of windows */
 static unsigned int snap      = 32;       /* snap pixel */
-static unsigned int gappih    = 20;       /* horiz inner gap between windows */
-static unsigned int gappiv    = 10;       /* vert inner gap between windows */
+static unsigned int gappih    = 15;       /* horiz inner gap between windows */
+static unsigned int gappiv    = 5;       /* vert inner gap between windows */
 static unsigned int gappoh    = 10;       /* horiz outer gap between windows and screen edge */
-static unsigned int gappov    = 30;       /* vert outer gap between windows and screen edge */
+static unsigned int gappov    = 15;       /* vert outer gap between windows and screen edge */
 static int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
-static int smartgaps          = 0;        /* 1 means no outer gap when there is only one window */
+static int smartgaps          = 1;        /* 1 means no outer gap when there is only one window */
 static int showbar            = 1;        /* 0 means no bar */
-static int topbar             = 1;        /* 0 means bottom bar */
-static char *fonts[]          = { "Iosevka Nerd Font Mono,Iosevka NFM:size=16", "Hack:size=10:antialias=true"  };
+static int topbar             = 0;        /* 0 means bottom bar */
+static char *fonts[]          = { "Iosevka Nerd Font Mono,Iosevka NFM:size=17:antialias=true"  };
 
-static char normbgcolor[]           = "#121212";
-static char normfgcolor[]           = "#999999";
+static char normbgcolor[]           = "#1a1b26"; // "#282d42";
+static char normfgcolor[]           = "#666666";
 #ifdef DEBUG_MODE
 static char normbordercolor[]       = "#ff0000";
 #else
-static char normbordercolor[]       = "#222222";
+static char normbordercolor[]       = "#333333";
 #endif // DEBUG_MODE
 
-static char selfgcolor[]            = "#ffffff";
+static char selfgcolor[]            = "#a9b1d6";
+#ifdef DEBUG_MODE
+static char selbgcolor[]            = "#121212";
+static char selbordercolor[]        = "#00ff00"; /*set to black to disable windows borders*/
+#else
 static char selbgcolor[]            = "#000000";
-static char selbordercolor[]        = "#eeeeee";
+static char selbordercolor[]        = "#aaaaaa"; /*set to black to disable windows borders*/
+#endif
 
 static char memfgcolor[]            = "#89b4fa";
 static char membgcolor[]            = "#1e1e2e";
 static char membordercolor[]        = "#eeeeee";
 
-static char wtrfgcolor[]            = "#74c7ec";
-static char wtrbgcolor[]            = "#1e1e2e";
-static char wtrbordercolor[]        = "#eeeeee";
+static char okfgcolor[]            = "#00ff00";
+static char okbgcolor[]            = "#1e1e2e";
+static char okbordercolor[]        = "#eeeeee";
+
+static char errfgcolor[]            = "#ff0000";
+static char errbgcolor[]            = "#1e1e2e";
+static char errbordercolor[]        = "#eeeeee";
 
 static char datefgcolor[]            = "#a6adc8";
 static char datebgcolor[]            = "#1e1e2e";
@@ -64,9 +75,10 @@ static char *colors[][3] = {
        [SchemeNorm] = { normfgcolor, normbgcolor, normbordercolor },
        [SchemeSel]  = { selfgcolor,  selbgcolor,  selbordercolor  },
        [SchemeMem]  = { memfgcolor,  membgcolor,  membordercolor  },
-       // [SchemeWeather]  = { wtrfgcolor,  wtrbgcolor,  wtrbordercolor  },
+       [SchemeOk]   = { okfgcolor,   okbgcolor,   okbordercolor  },
+       [SchemeErr]  = { errfgcolor,  errbgcolor,  errbordercolor  },
        [SchemeDate] = { datefgcolor, datebgcolor, datebordercolor },
-       [SchemeHDD] =  { hddfgcolor,  hddbgcolor,  hddbordercolor  },
+       [SchemeHDD]  =  { hddfgcolor, hddbgcolor,  hddbordercolor  },
 };
 
 typedef struct {
@@ -145,11 +157,12 @@ static const Layout layouts[] = {
 #define str(c) #c
 
 /* commands */
-static const char* termcmd[]  = { TERMINAL, NULL };
+static const char* termcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL, NULL };
+static const char* editorcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL, "-e", EDITOR, NULL };
 static Arg* exec_once[] = {
 	// (Arg[]){ SHCMD("killall -q dwmblocks picom") },
 	(Arg[]){ { .v = (const char*[]){ "picom",
-		"--corner-radius", str(default_corner_radius/2), 
+		"--corner-radius", str(default_corner_diameter/2), 
 		"--backend", "glx", 
 		"-f",
 		"--fade-in-step", "0.08",
@@ -232,11 +245,12 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_e,          spawn,                  SHCMD(TERMINAL " -e abook -C ~/.config/abook/abookrc --datafile ~/.config/abook/addressbook") },
 	{ MODKEY,			    XK_r,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "sudo", "termshark", NULL } } },
 
-	{ MODKEY|ShiftMask,	    XK_r,          setlayout,              {.v = &layouts[0]} }, /* tile */
+	{ MODKEY,	    XK_r,          setlayout,                      {.v = &layouts[0]} }, /* tile */
 	{ MODKEY|ShiftMask,	    XK_t,          setlayout,              {.v = &layouts[1]} }, /* bstack */
 	{ MODKEY|ShiftMask,		XK_u,          setlayout,              {.v = &layouts[2]} }, /* monocle */
 	{ MODKEY,			    XK_i,          setlayout,              {.v = &layouts[3]} }, /* centeredmaster */
 	{ MODKEY|ShiftMask,		XK_i,          setlayout,              {.v = &layouts[4]} }, /* layout 4 */
+	{ MODKEY,		        XK_e,          setlayout,              {.v = &layouts[5]} },
 
 	{ MODKEY|ShiftMask,		XK_p,          spawn,                  SHCMD("mpc pause; pauseallmpv") },
 	{ MODKEY,			    XK_bracketleft, spawn,                 {.v = (const char*[]){ "mpc", "seek", "-10", NULL } } },
@@ -275,7 +289,8 @@ static const Key keys[] = {
 	{ MODKEY,			XK_n,          spawn,                  SHCMD(BIN_PREFIX "drawop") },
 	{ MODKEY,			XK_m,          spawn,                  SHCMD(BIN_PREFIX "sv") },
 	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD(MUS_PLAYER " " MUS_PATH "/\"$(ls " MUS_PATH " | dmenu " SH_DMENU_FLAGS ")\"") },
-	{ MODKEY,			XK_v,          spawn,                  SHCMD("fceux "EMU_ROMS"/$(ls -1 -f " EMU_ROMS "| dmenu " SH_DMENU_FLAGS ")") },
+	{ MODKEY,	        XK_v,          spawn,                  {.v = editorcmd } },
+	{ MODKEY|ShiftMask,	XK_v,          spawn,                  SHCMD("fceux "EMU_ROMS"/$(ls -1 -f " EMU_ROMS "| dmenu " SH_DMENU_FLAGS ")") },
 	{ MODKEY,			XK_comma,      spawn,                  {.v = (const char*[]){ "mpc", "prev", NULL } } },
 	{ MODKEY|ShiftMask,	XK_comma,      spawn,                  {.v = (const char*[]){ "mpc", "seek", "0%", NULL } } },
 	{ MODKEY,			XK_period,     spawn,                  {.v = (const char*[]){ "mpc", "next", NULL } } },
@@ -290,7 +305,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,	XK_Page_Down,  shifttag,               { .i = +1 } },
 	{ MODKEY,			XK_Insert,     spawn,                  SHCMD("xdotool type $(grep -v '^#' ~/.local/share/larbs/snippets | dmenu -i -l 50 | cut -d' ' -f1)") },
 
-	{ MODKEY,			XK_F3,         spawn,                  {.v = (const char*[]){ "displayselect", NULL } } },
+	{ MODKEY,			XK_F3,         spawn,                  {.v = (const char*[]){ "scrot", "-s", NULL } } },
 	{ MODKEY,			XK_F4,         spawn,                  SHCMD(TERMINAL " -e alsamixer; kill -44 $(pidof dwmblocks)") },
 	{ MODKEY,			XK_F5,         xrdb,                   {.v = NULL } },
 	{ MODKEY,			XK_F11,        spawn,                  SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam $(ls /dev/video[0,2,4,6,8] | tail -n 1)") },

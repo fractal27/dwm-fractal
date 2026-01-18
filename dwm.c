@@ -91,7 +91,7 @@
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-enum { SchemeNorm = 1, SchemeSel = 2, SchemeMem = 3, SchemeWeather = 4, SchemeDate = 5, SchemeHDD = 6}; /* color schemes */
+enum { SchemeNorm = 1, SchemeSel = 2, SchemeMem = 3, SchemeDate = 4, SchemeHDD = 5, SchemeOk = 6, SchemeErr= 7}; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
        NetWMWindowTypeDialog, NetClientList, NetClientInfo, NetLast }; /* EWMH atoms */
@@ -920,7 +920,7 @@ drawbar(Monitor *m)
         }
         if(!using_themes){
                startx_of_status = m->ww - tw;
-               drw_text(drw, startx_of_status, 0, tw, bh, 0, stext, 0, blocks_corner_radius, blocks_corner_radius);
+               drw_text(drw, startx_of_status, 0, tw, bh, 0, stext, 0, blocks_corner_diameter, blocks_corner_diameter);
         } else {
                char buffer[namelen+1];
 
@@ -934,7 +934,7 @@ drawbar(Monitor *m)
                LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), buffer: '%s'[%i->%i]\n",
                              (long)0, m->ww - tw, 0, buffer, 0, ovec[1]+1);
                
-               drw_text(drw, m->ww - tw, 0, drw_fontset_getwidth(drw,buffer), bh, 0, buffer, 0, blocks_corner_radius, blocks_corner_radius);
+               drw_text(drw, m->ww - tw, 0, drw_fontset_getwidth(drw,buffer), bh, 0, buffer, 0, blocks_corner_diameter, blocks_corner_diameter);
                tw_buffer += drw_fontset_getwidth(drw, buffer);
 
                for(size_t i = 1; i < ovec_l; i++){
@@ -950,7 +950,7 @@ drawbar(Monitor *m)
                       buffer[next-current] = '\0';
 					  unsigned int buffer_width = drw_fontset_getwidth(drw, buffer);
                       LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), with scheme %i, buffer: '%s'[%i->%i]\n", i, m->ww - tw + tw_buffer, 0, scheme_id, buffer, current, next);
-					  drw_text(drw, m->ww - tw + tw_buffer, 0, buffer_width, bh, 0, buffer, 0, blocks_corner_radius, blocks_corner_radius);
+					  drw_text(drw, m->ww - tw + tw_buffer, 0, buffer_width, bh, 0, buffer, 0, blocks_corner_diameter, blocks_corner_diameter);
                       tw_buffer += (islast+1) * buffer_width;
                }
                startx_of_status = m->ww - tw_buffer;
@@ -974,8 +974,8 @@ drawbar(Monitor *m)
         w = TEXTW(tags[i]);
 		drw_setscheme(drw, scheme[is_tab_selected ? SchemeSel : SchemeNorm]);
 		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i, 
-				is_tab_selected?seltag_corner_radius:tags_corner_radius,
-				is_tab_selected?seltag_corner_radius:tags_corner_radius);
+				is_tab_selected?seltag_corner_diameter:tags_corner_diameter,
+				is_tab_selected?seltag_corner_diameter:tags_corner_diameter);
 		x += w;
 	}
 	w = TEXTW(m->sel->name);
@@ -1952,8 +1952,13 @@ setmfact(const Arg *arg)
 int
 get_path(char string[], size_t size){
        char dir_string[size];
-       unsigned int uid = getuid();
-       snprintf(dir_string,size,"/run/user/%u/dwm/",uid);
+	   char* xdg_runtime_dir;
+	   if((xdg_runtime_dir = getenv("XDG_RUNTIME_DIR")) == NULL){
+		   unsigned int uid = getuid();
+		   snprintf(dir_string,size,"/run/user/%u/dwm/",uid);
+	   } else {
+		   snprintf(dir_string,size,"%s/dwm/",xdg_runtime_dir);
+	   }
        int ret = mkdir(dir_string, 0700);
        if(!ret || errno == EEXIST){
               snprintf(string,size,"%s/dwm.log",dir_string);
