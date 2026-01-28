@@ -33,9 +33,13 @@ OPTIMISATIONS = -march=native -mtune=native -flto=auto -O3
 # flags
 CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" ${XINERAMAFLAGS}
 ifeq ($(DEBUG),1)
-CFLAGS   = -g -std=c99 -pedantic -Wall -Wextra -Wno-unused-function -Wno-deprecated-declarations -O0 ${INCS} ${CPPFLAGS} -DDEBUG_MODE
+CFLAGS   = -g -std=c23 -pedantic -Wall -Wextra -Wno-unused-function -Wno-deprecated-declarations -O0 ${INCS} ${CPPFLAGS} -DDEBUG_MODE
 else
-CFLAGS   = ${OPTIMISATIONS} -std=c99 -pedantic -Wall -Wno-unused-function -Wno-deprecated-declarations ${INCS} ${CPPFLAGS}
+ifeq ($(DEV),1)
+CFLAGS   = -g -std=c23 -pedantic -Wall -Wextra -Wno-unused-function -Wno-deprecated-declarations -O0 ${INCS} ${CPPFLAGS} -DDEBUG_MODE -D__EXPERIMENTAL_ANIMATE_RESIZE
+else
+CFLAGS   = ${OPTIMISATIONS} -std=c23 -pedantic -Wall -Wno-unused-function -Wno-deprecated-declarations ${INCS} ${CPPFLAGS}
+endif
 endif
 LDFLAGS  = ${LIBS}
 # Solaris

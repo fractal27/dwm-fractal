@@ -6,8 +6,8 @@
 #define EDITOR        "vim"
 #define TERMCLASS     "St"
 #define EMU_ROMS      "~/Downloads/emu-roms"
-#define LAUNCH_BROWSER       {.v = (const char*[]){"mullvad-browser",NULL}}
-#define LAUNCH_OTHER_BROWSER {.v = (const char*[]){"qutebrowser",NULL}}
+#define LAUNCH_BROWSER       SHCMD("m-apps launch zen")
+// #define LAUNCH_OTHER_BROWSER       SHCMD("m-apps launch qutebrowser")
 #define LAUNCH_TOR_BROWSER   SHCMD("m-apps launch start-tor-browser")
 #define MUS_PATH "~/Personal/Mus"
 #define MUS_PLAYER "mpv"
@@ -15,23 +15,22 @@
 #define BIN_PREFIX    "~/.local/bin/"
 
 /* appearance */
-static unsigned int default_corner_diameter = 18; //18; /* rounded border of windows */
-static unsigned int seltag_corner_diameter  = 16; //12;  /* rounded border of selected tag in bar */
-static unsigned int tags_corner_diameter    = 20; //6;    /* rounded border of non-selected tags in bar */
-static unsigned int blocks_corner_diameter  = 6; //1;  /* rounded border of in bar */
+static constexpr unsigned int default_corner_diameter = 24; /* rounded border of windows */
+static constexpr unsigned int seltag_corner_diameter  = 00; /* rounded border of selected tag in bar */
+static constexpr unsigned int tags_corner_diameter    = 00; /* rounded border of non-selected tags in bar */
+static constexpr unsigned int blocks_corner_diameter  = 00;  /* rounded border of in bar */
 
-										  
-static unsigned int borderpx  = 2;        /* border pixel of windows */
-static unsigned int snap      = 32;       /* snap pixel */
+static constexpr unsigned int borderpx  = 2;        /* border pixel of windows */
+static constexpr unsigned int snap      = 32;       /* snap pixel */
 static unsigned int gappih    = 15;       /* horiz inner gap between windows */
 static unsigned int gappiv    = 5;       /* vert inner gap between windows */
 static unsigned int gappoh    = 10;       /* horiz outer gap between windows and screen edge */
 static unsigned int gappov    = 15;       /* vert outer gap between windows and screen edge */
-static int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
-static int smartgaps          = 1;        /* 1 means no outer gap when there is only one window */
+static constexpr int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
+static int smartgaps          = 0;        /* 1 means no outer gap when there is only one window */
 static int showbar            = 1;        /* 0 means no bar */
-static int topbar             = 0;        /* 0 means bottom bar */
-static char *fonts[]          = { "Iosevka Nerd Font Mono,Iosevka NFM:size=17:antialias=true"  };
+static constexpr int topbar             = 1;        /* 0 means bottom bar */
+static char *fonts[]          = { "IosevkaTerm Nerd Font:size=17:antialias=true"  };
 
 static char normbgcolor[]           = "#1a1b26"; // "#282d42";
 static char normfgcolor[]           = "#666666";
@@ -70,7 +69,7 @@ static char hddfgcolor[]            = "#f9e2af";
 static char hddbgcolor[]            = "#1e1e2e";
 static char hddbordercolor[]        = "#eeeeee";
 
-static char *colors[][3] = {
+static char* const colors[][3] = {
        /*               fg           bg           border   */
        [SchemeNorm] = { normfgcolor, normbgcolor, normbordercolor },
        [SchemeSel]  = { selfgcolor,  selbgcolor,  selbordercolor  },
@@ -106,7 +105,7 @@ static const Rule rules[] = {
 	*/
 	/* class    instance      title       	 tags mask    isfloating   isterminal  noswallow  monitor */
        { "st-256color",  NULL,"Simple terminal",      1 << 0 /*Tag 1*/,            0,      0,          0,          -1 },
-       { "qutebrowser",  NULL,         NULL,          1 << 1 /*Tag 2*/,            0,      0,          0,          -1 },
+       { "zen",  NULL,         NULL,          1 << 1 /*Tag 2*/,            0,      0,          0,          -1 },
        { "torbrowser",   NULL,         NULL,          1 << 1 /*Tag 2*/,            0,      0,          0,          -1 },
        { "Tor Browser",  NULL,         NULL,          1 << 1 /*Tag 2*/,            0,      0,          0,          -1 },
        { "obs",          NULL,         NULL,          1 << 3 /*Tag 4*/,            0,      0,          0,          -1 },
@@ -118,7 +117,7 @@ static float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
 static int nmaster     = 1;    /* number of clients in master area */
 static int resizehints = 0;    /* 1 means respect size hints in tiled resizals */
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
-#define FORCE_VSPLIT 1  /* nrowgrid layout: force two clients to always split vertically */
+#define FORCE_VSPLIT 0  /* nrowgrid layout: force two clients to always split vertically */
 #include "vanitygaps.c"
 static const Layout layouts[] = {
 	/* symbol     arrange function */
@@ -159,18 +158,12 @@ static const Layout layouts[] = {
 /* commands */
 static const char* termcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL, NULL };
 static const char* editorcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL, "-e", EDITOR, NULL };
-static Arg* exec_once[] = {
-	// (Arg[]){ SHCMD("killall -q dwmblocks picom") },
-	(Arg[]){ { .v = (const char*[]){ "picom",
-		"--corner-radius", str(default_corner_diameter/2), 
-		"--backend", "glx", 
-		"-f",
-		"--fade-in-step", "0.08",
-		"-e", "1.0",
-		0}
-	} },
-	NULL
-};
+static Arg exec_once = SHCMD("picom "
+		"--corner-radius " str(default_corner_diameter/2)
+		"--backend " "glx"
+		"-f "
+		"--fade-in-step " "0.08"
+		"-e " "1.0");
 
 // this is not in the original, but I thought it might be useful.
 // also, I think part of this doesn't work, I have to debug this.,
@@ -187,7 +180,7 @@ ResourcePref resources[] = {
 		{ "color0",		STRING,	&selfgcolor },
 		{ "color4",		STRING,	&selbgcolor },
 		{ "borderpx",		INTEGER, &borderpx },
-		{ "snap",		INTEGER, &snap },
+		{ "snap",		INTEGER, (unsigned int*)&snap },
 		{ "showbar",		INTEGER, &showbar },
 		{ "topbar",		INTEGER, &topbar },
 		{ "nmaster",		INTEGER, &nmaster },
@@ -203,9 +196,25 @@ ResourcePref resources[] = {
 
 #include <X11/XF86keysym.h>
 #include "shiftview.c"
+// commented are for wpclt
+#define VOLUME_UPDATE_BLOCK "kill -44 $(pidof dwmblocks);"
+// #define VOLUME_PLUS5PERC "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+;"
+// #define VOLUME_PLUS15PERC "wpctl set-volume @DEFAULT_AUDIO_SINK@ 15%+;"
+// #define VOLUME_MINUS5PERC "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-;"
+// #define VOLUME_MINUS15PERC "wpctl set-volume @DEFAULT_AUDIO_SINK@ 15%-;"
+// #define VOLUME_MUTE "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle;"
+
+#define VOLUME_PLUS5PERC "pactl set-sink-volume @DEFAULT_SINK@ +5%;"
+#define VOLUME_PLUS15PERC "pactl set-sink-volume @DEFAULT_SINK@ +15%;"
+#define VOLUME_MINUS5PERC "pactl set-sink-volume @DEFAULT_SINK@ -5%;"
+#define VOLUME_MINUS15PERC "pactl set-sink-volume @DEFAULT_SINK@ -15%;"
+#define VOLUME_MUTE "pactl set-sink-mute @DEFAULT_AUDIO_SINK@ toggle;"
+
+
 #define DMENU_RUN_PATH "~/.local/apps/terminal:~/.local/apps/gui"
 #define DMENU_FLAGS "-z","500","-x","300","-y","400","-l", "12", "-fn", "Iosevka Nerd Font:size=25" // "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
 #define SH_DMENU_FLAGS "-z 500 -x 300 -y 500 -l 12 -fn 'Iosevka Nerd Font:size=25'"                  // -m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+																									 //
 // dmenu flags are actually equal, but I haven't changed it.
 //-m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
 
@@ -222,11 +231,11 @@ static const Key keys[] = {
 	TAGKEYS(			    XK_7,          6)
 	TAGKEYS(			    XK_8,          7)
 	TAGKEYS(			    XK_9,          8)
-	{ MODKEY,			    XK_u,          spawn,	               	   SHCMD("cat ~/.emojis.txt | dmenu | cut -d '|' -f1 | xclip") },
-	{ MODKEY,			    XK_apostrophe, spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-; kill -44 $(pidof dwmblocks)") },
-	{ MODKEY|ShiftMask,		XK_apostrophe, spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 15%-; kill -44 $(pidof dwmblocks)") },
-	{ MODKEY,			    XK_minus,      spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+; kill -44 $(pidof dwmblocks)") },
-	{ MODKEY|ShiftMask,		XK_minus,      spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 15%+; kill -44 $(pidof dwmblocks)") },
+	{ MODKEY,			    XK_u,          spawn,	               SHCMD("cat ~/.emojis.txt | dmenu | cut -d '|' -f1 | xclip") },
+	{ MODKEY,			    XK_plus,       spawn,                  SHCMD(VOLUME_MINUS5PERC VOLUME_UPDATE_BLOCK) },
+	{ MODKEY|ShiftMask,		XK_plus,       spawn,                  SHCMD(VOLUME_MINUS15PERC VOLUME_UPDATE_BLOCK) },
+	{ MODKEY,			    XK_minus,      spawn,                  SHCMD(VOLUME_PLUS5PERC VOLUME_UPDATE_BLOCK) },
+	{ MODKEY|ShiftMask,		XK_minus,      spawn,                  SHCMD(VOLUME_PLUS15PERC VOLUME_UPDATE_BLOCK) },
 	{ MODKEY,			    XK_BackSpace,  spawn,                  {.v = (const char*[]){ "sysact", NULL } } },
 	{ MODKEY|ShiftMask,		XK_BackSpace,  spawn,                  {.v = (const char*[]){ "sysact", NULL } } },
 
@@ -239,7 +248,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,	    XK_r,          quit,                   {.i = 1} },
 
 	{ MODKEY,			    XK_w,          spawn,                  LAUNCH_BROWSER },
-	{ MODKEY,	            XK_p,          spawn,                  LAUNCH_OTHER_BROWSER },
+	// { MODKEY,	            XK_p,          spawn,                  LAUNCH_OTHER_BROWSER },
 	{ MODKEY,			    XK_t,          spawn,                  LAUNCH_TOR_BROWSER },
 
 	{ MODKEY|ShiftMask,		XK_e,          spawn,                  SHCMD(TERMINAL " -e abook -C ~/.config/abook/abookrc --datafile ~/.config/abook/addressbook") },
@@ -312,15 +321,14 @@ static const Key keys[] = {
 	{ MODKEY,			XK_space,      zoom,                   {0} },
 	{ MODKEY|ShiftMask,	XK_space,      togglefloating,         {0} },
 
-	{ 0,				XK_Print,      spawn,                  SHCMD("maim pic-full-$(date '+%y%m%d-%H%M-%S').png") },
 	{ ShiftMask,	    XK_Print,      spawn,                  {.v = (const char*[]){ "maimpick", NULL } } },
 	{ MODKEY,			XK_Print,      spawn,		       {.v = (const char*[]){ "dmenurecord", NULL } } },
 	{ MODKEY|ShiftMask,	XK_Print,      spawn,                  {.v = (const char*[]){ "dmenurecord", "kill", NULL } } },
 	{ MODKEY,			XK_Delete,     spawn,                  {.v = (const char*[]){ "dmenurecord", "kill", NULL } } },
 
-	{ 0, XF86XK_AudioMute,                         spawn,                  SHCMD("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; kill -44 $(pidof dwmblocks)") },
-	{ 0, XF86XK_AudioRaiseVolume,                  spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 0%- && wpctl set-volume @DEFAULT_AUDIO_SINK@ 3%+; kill -44 $(pidof dwmblocks)") },
-	{ 0, XF86XK_AudioLowerVolume,                  spawn,                  SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 0%+ && wpctl set-volume @DEFAULT_AUDIO_SINK@ 3%-; kill -44 $(pidof dwmblocks)") },
+	{ 0, XF86XK_AudioMute,                         spawn,                  SHCMD(VOLUME_MUTE VOLUME_UPDATE_BLOCK) },
+	{ 0, XF86XK_AudioRaiseVolume,                  spawn,                  SHCMD(VOLUME_PLUS5PERC) },
+	{ 0, XF86XK_AudioLowerVolume,                  spawn,                  SHCMD(VOLUME_MINUS5PERC) },
 	{ 0, XF86XK_AudioPrev,                         spawn,                  {.v = (const char*[]){ "mpc", "prev", NULL } } },
 	{ 0, XF86XK_AudioNext,                         spawn,                  {.v = (const char*[]){ "mpc",  "next", NULL } } },
 	{ 0, XF86XK_AudioPause,                        spawn,                  {.v = (const char*[]){ "mpc", "pause", NULL } } },
@@ -353,7 +361,7 @@ static const Button buttons[] = {
        { ClkStatusText,         0,                  Button5,        sigdwmblocks,   {.i = 5} },
        { ClkStatusText,         ShiftMask,          Button1,        sigdwmblocks,   {.i = 6} },
 #endif
-       { ClkStatusText,         ShiftMask,          Button3,        spawn,          SHCMD(TERMINAL " -e vim ~/.local/src/dwmblocks/config.h") },
+       { ClkStatusText,         ShiftMask,          Button3,        spawn,          SHCMD(TERMINAL " -e vim ~/suckless-fw/dwmblocks/config.h") },
        { ClkClientWin,          MODKEY,             Button1,        movemouse,      {0} },
        { ClkClientWin,          MODKEY,             Button2,        defaultgaps,    {0} },
        { ClkClientWin,          MODKEY,             Button3,        resizemouse,    {0} },

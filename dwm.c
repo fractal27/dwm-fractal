@@ -804,6 +804,18 @@ configurerequest(XEvent *e)
 }
 
 void
+copynvalidchars(char *text, char *rawtext, unsigned int n)
+{
+	int i = -1, j = 0;
+
+	while(rawtext[++i] && i < n) {
+		if ((unsigned char)rawtext[i] >= ' ') {
+			text[j++] = rawtext[i];
+		}
+	}
+	text[j] = '\0';
+}
+void
 copyvalidchars(char *text, char *rawtext)
 {
 	int i = -1, j = 0;
@@ -915,12 +927,16 @@ drawbar(Monitor *m)
         for(size_t i = 0; i < namelen; i++){
                if( ((unsigned char)rawstext[i] < 32) && ovec_l < OVEC_L) {
                       if(!using_themes) using_themes = 1;
+					  if(ovec_l && rawstext[ovec[ovec_l-1]] == rawstext[i])
+						  continue;
                       ovec[ovec_l++] = i;
                }
         }
         if(!using_themes){
                startx_of_status = m->ww - tw;
-               drw_text(drw, startx_of_status, 0, tw, bh, 0, stext, 0, blocks_corner_diameter, blocks_corner_diameter);
+               drw_text(drw, startx_of_status, 0, tw, bh, 0, stext, 0, 
+					   blocks_corner_diameter,
+					   default_corner_diameter);
         } else {
                char buffer[namelen+1];
 
@@ -944,14 +960,21 @@ drawbar(Monitor *m)
 
                       if(scheme_id - 1 < LENGTH(colors)) drw_setscheme(drw, scheme[scheme_id]);
                       int next = (i+1 != ovec_l) ? ovec[i+1] : namelen;
-                      *buffer = '\0';
 
-                      strncpy(buffer,&rawstext[current],next-current);
-                      buffer[next-current] = '\0';
+					  int j = 0;
+					  for(int i = 0; i < (next-current) && rawstext[current+i]; i++) {
+						  if ((unsigned char)rawstext[current+i] >= 32) {
+							  buffer[j++] = rawstext[current+i];
+						  }
+					  }
+					  buffer[j] = '\0';
+
 					  unsigned int buffer_width = drw_fontset_getwidth(drw, buffer);
                       LOG_DEBUG("(ovec %ld) writing bar from (%i,%i), with scheme %i, buffer: '%s'[%i->%i]\n", i, m->ww - tw + tw_buffer, 0, scheme_id, buffer, current, next);
-					  drw_text(drw, m->ww - tw + tw_buffer, 0, buffer_width, bh, 0, buffer, 0, blocks_corner_diameter, blocks_corner_diameter);
-                      tw_buffer += (islast+1) * buffer_width;
+					  drw_text(drw, m->ww - tw + tw_buffer, 0, buffer_width, bh, 0, buffer, 0,
+							  blocks_corner_diameter,
+							  islast ? default_corner_diameter : blocks_corner_diameter);
+                      tw_buffer += (islast + 1) * buffer_width;
                }
                startx_of_status = m->ww - tw_buffer;
         }
@@ -965,33 +988,30 @@ drawbar(Monitor *m)
 	}
 	x = 0;
 
+
+	int not_selected = 0;
 	for (i = 0; i < LENGTH(tags); i++) {
 		/* do not draw vacant tags */
 		int is_tab_selected = m->tagset[m->seltags] & 1 << i;
-		if (!(occ & 1 << i || is_tab_selected))
+		if (!(occ & 1 << i || is_tab_selected)){
+			   not_selected++;
                continue;
+		}
 
         w = TEXTW(tags[i]);
 		drw_setscheme(drw, scheme[is_tab_selected ? SchemeSel : SchemeNorm]);
-		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i, 
-				is_tab_selected?seltag_corner_diameter:tags_corner_diameter,
-				is_tab_selected?seltag_corner_diameter:tags_corner_diameter);
+		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], 0,
+				i - not_selected ? tags_corner_diameter: default_corner_diameter,
+				tags_corner_diameter);
 		x += w;
 	}
-	w = TEXTW(m->sel->name);
-	drw_setscheme(drw, scheme[SchemeNorm]);
-    if((volatile char*)m->sel->name != NULL && m->sel->name[0] != '\0'){
-           unsigned int rectw = startx_of_status - (x + w);
-           if(w > rectw){ w = rectw; }
-           x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0, 0, 0);
-           drw_rect(drw, x, 0, rectw, bh, 1, 1);
-    }
 
 	if ((w = m->ww - tw - x) > bh) {
 		if (m->sel) {
 			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
-			if (m->sel->isfloating)
-				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
+			drw_text(drw, x, 0, w - 1, bh, lrpad / 2, m->sel->name, 1, 0, 0);
+			/*if (m->sel->isfloating)
+				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);*/
 		} else {
 			drw_setscheme(drw, scheme[SchemeNorm]);
 			drw_rect(drw, x, 0, w, bh, 1, 1);
@@ -1767,9 +1787,7 @@ run(void)
 
 void
 runExecOnce(void) {
-	for(Arg** to_exec = exec_once; *to_exec != NULL; to_exec++){
-		spawn(*to_exec);
-	}
+	spawn(&exec_once);
 }
 
 void
@@ -2017,7 +2035,7 @@ setup(void)
 	/* init appearance */
 	scheme = ecalloc(LENGTH(colors), sizeof(Clr *));
 	for (i = 0; i < LENGTH(colors); i++)
-		scheme[i] = drw_scm_create(drw, colors[i], 3);
+		scheme[i] = drw_scm_create(drw, (char**)colors[i], 3);
     int err;
     if((err = get_path(logfile,LOGFILE_LEN))){
            stdlog = stderr;
@@ -2852,7 +2870,7 @@ xrdb(const Arg *arg)
     load_xresources();
 
     for (int i = 0; i < LENGTH(colors); i++)
-        scheme[i] = drw_scm_create(drw, colors[i], 3);
+        scheme[i] = drw_scm_create(drw, (char**)colors[i], 3);
 
     focus(NULL);
     arrange(NULL);

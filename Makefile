@@ -19,6 +19,9 @@ dwm: ${OBJ}
 debug:
 	$(MAKE) -B DEBUG=1
 
+dev:
+	$(MAKE) -B DEV=1
+
 clean:
 	rm -f dwm ${OBJ} dwm-${VERSION}.tar.gz *.orig *.rej
 
