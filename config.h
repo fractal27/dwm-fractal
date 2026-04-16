@@ -10,7 +10,7 @@
 // #define LAUNCH_OTHER_BROWSER       SHCMD("m-apps launch qutebrowser")
 #define LAUNCH_TOR_BROWSER   SHCMD("m-apps launch start-tor-browser")
 #define MUS_PATH "~/Personal/Mus"
-#define MUS_PLAYER "mpv"
+#define MUS_PLAYER "mpv --no-video"
 
 #define BIN_PREFIX    "~/.local/bin/"
 
@@ -21,6 +21,7 @@ static constexpr unsigned int tags_corner_diameter    = 00; /* rounded border of
 static constexpr unsigned int blocks_corner_diameter  = 00;  /* rounded border of in bar */
 
 static constexpr unsigned int borderpx  = 2;        /* border pixel of windows */
+static constexpr unsigned int animspeed = 100;        /* animation speed (frames) */
 static constexpr unsigned int snap      = 32;       /* snap pixel */
 static unsigned int gappih    = 15;       /* horiz inner gap between windows */
 static unsigned int gappiv    = 5;       /* vert inner gap between windows */
@@ -212,8 +213,8 @@ ResourcePref resources[] = {
 
 
 #define DMENU_RUN_PATH "~/.local/apps/terminal:~/.local/apps/gui"
-#define DMENU_FLAGS "-z","500","-x","300","-y","400","-l", "12", "-fn", "Iosevka Nerd Font:size=25" // "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
-#define SH_DMENU_FLAGS "-z 500 -x 300 -y 500 -l 12 -fn 'Iosevka Nerd Font:size=25'"                  // -m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+#define DMENU_FLAGS "-z","500","-x","300","-y","400","-l", "12", "-fn", "IosevkaTerm Nerd Font:size=25:style=Light,Regular" // "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+#define SH_DMENU_FLAGS "-z 500 -x 300 -y 500 -l 12 -fn 'IosevkaTerm Nerd Font:style=Light,Regular:size=25'"                  // -m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
 																									 //
 // dmenu flags are actually equal, but I haven't changed it.
 //-m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
@@ -241,7 +242,8 @@ static const Key keys[] = {
 
     // { MODKEY,			    XK_Tab,        view,                   {0} },
 	{ MODKEY,			    XK_q,          killclient,             {0} },
-    { MODKEY,               XK_o,          spawn,                  SHCMD(BIN_PREFIX "timer -c \"$(echo | dmenu -p \"comment\" " SH_DMENU_FLAGS ")\" \"$(cat ~/.timers | dmenu "SH_DMENU_FLAGS" | cut -d \"#\" -f1 | xargs)") } ,
+    { MODKEY,               XK_o,          spawn,                  SHCMD(BIN_PREFIX "timer_term -s -c \"$(echo | dmenu -p \"comment\" " SH_DMENU_FLAGS ")\" \"$(cat ~/.timers | dmenu "SH_DMENU_FLAGS" | cut -d \"#\" -f1 | xargs)\"") } ,
+    { MODKEY|ShiftMask,     XK_o,          spawn,                  SHCMD(BIN_PREFIX "/ws \"$(" BIN_PREFIX "/hnrss_reader | dmenu "SH_DMENU_FLAGS" | cut -d'|' -f2)\"") } ,
 	{ MODKEY|ShiftMask,	    XK_w,          spawn,                  SHCMD(BIN_PREFIX "ws $(dmenu " SH_DMENU_FLAGS " < ~/.websites)") },
 
 	{ MODKEY|ShiftMask,		XK_q,          quit,                   {.i = 0} },
@@ -272,7 +274,7 @@ static const Key keys[] = {
 	{ MODKEY,			    XK_a,          togglegaps,             {0} },
 	{ MODKEY|ShiftMask,		XK_a,          defaultgaps,            {0} },
 	{ MODKEY,			    XK_s,          togglesticky,           {0} },
-	{ MODKEY,			    XK_d,          spawn,                  SHCMD(BIN_PREFIX "m-apps launch $(cat ~/.local/share/apps/apps.ttext | dmenu  -z 500 -x 300 -y 500 -l 12 -fn 'MathJax_Typewriter:size=25' | cut -d '/' -f2)") },
+	{ MODKEY,			    XK_d,          spawn,                  SHCMD(BIN_PREFIX "m-apps launch \"$(cat ~/.local/share/apps/apps.ttext | dmenu "SH_DMENU_FLAGS" | cut -d '/' -f2)\"")}, /*-z 500 -x 300 -y 500 -l 12 -fn 'MathJax_Typewriter:size=25'*/
 	{ MODKEY|ShiftMask,		XK_d,          spawn,                  {.v = (const char*[]){ "keepassxc", DMENU_FLAGS, NULL } } },
 	{ MODKEY,			    XK_f,          togglefullscr,          {0} },
 	{ MODKEY|ShiftMask,		XK_f,          setlayout,              {.v = &layouts[8]} },
@@ -293,11 +295,11 @@ static const Key keys[] = {
 	{ MODKEY,			XK_z,          incrgaps,               {.i = +3 } },
 	{ MODKEY,			XK_x,          incrgaps,               {.i = -3 } },
 	{ MODKEY,			XK_b,          spawn,                  SHCMD("kill -9 $(ps ax -o comm x -u $USER | tail -n +2 | dmenu | xargs pidof)")},
-	{ MODKEY|ShiftMask, XK_b,          togglebar,              {0} },
+	{ MODKEY|ShiftMask, XK_b,          spawn,                  SHCMD("feh --bg-fill $(" BIN_PREFIX "img_select ~/.wallpapers/*)")},
 	{ MODKEY|ShiftMask,	XK_z,          spawn,                  SHCMD(BIN_PREFIX "boomer") },
 	{ MODKEY,			XK_n,          spawn,                  SHCMD(BIN_PREFIX "drawop") },
 	{ MODKEY,			XK_m,          spawn,                  SHCMD(BIN_PREFIX "sv") },
-	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD(MUS_PLAYER " " MUS_PATH "/\"$(ls " MUS_PATH " | dmenu " SH_DMENU_FLAGS ")\"") },
+	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("mus=$(ls -1 --color=never " MUS_PATH " | dmenu " SH_DMENU_FLAGS ");[ \"$mus\" != \"\" ] && " MUS_PLAYER " " MUS_PATH "/$mus") },
 	{ MODKEY,	        XK_v,          spawn,                  {.v = editorcmd } },
 	{ MODKEY|ShiftMask,	XK_v,          spawn,                  SHCMD("fceux "EMU_ROMS"/$(ls -1 -f " EMU_ROMS "| dmenu " SH_DMENU_FLAGS ")") },
 	{ MODKEY,			XK_comma,      spawn,                  {.v = (const char*[]){ "mpc", "prev", NULL } } },

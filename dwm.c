@@ -1657,39 +1657,37 @@ resize(Client *c, int x, int y, int w, int h, int interact)
 }
 
 float
-lerp(float a, float b, float t)
+smoothstep(float t)
 {
-           return a * (1.0 - t) + (b * t);
+	return t * t * (3.0f - 2.0f * t);
 }
 
 void
 resizeclient(Client *c, int x, int y, int w, int h)
 {
 	XWindowChanges wc;
+	float sx = c->x, sy = c->y, sw = c->w, sh = c->h;
+	float t;
 
-#ifdef __EXPERIMENTAL_ANIMATE_RESIZE
-    /* TODO: Broken, do not touch. this will be implemented later */
-    for(float t = 0.0; t <= 1.0; t += 0.1){
-           c->oldx = c->x; c->x = wc.x      = lerp((float)c->oldx,(float)x,t);
-           c->oldy = c->y; c->y = wc.y      = lerp((float)c->oldx,(float)y,t);
-           c->oldw = c->w; c->w = wc.width  = lerp((float)c->oldx,(float)w,t);
-           c->oldh = c->h; c->h = wc.height = lerp((float)c->oldx,(float)h,t);
-           wc.border_width = c->bw;
-           XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
-           configure(c);
-           XSync(dpy, False);
-    }
-#else 
-    c->oldx = c->x; c->x = wc.x      = x;
-    c->oldy = c->y; c->y = wc.y      = y;
-    c->oldw = c->w; c->w = wc.width  = w;
-    c->oldh = c->h; c->h = wc.height = h;
-    wc.border_width = c->bw;
-    XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
-    configure(c);
-    XSync(dpy, False);
-#endif
+	if (x == sx && y == sy && w == sw && h == sh)
+		goto apply;
 
+	for (int i = 1; i <= animspeed; i++) {
+		t = smoothstep((float)i / animspeed);
+		wc.x = sx + (x - sx) * t;
+		wc.y = sy + (y - sy) * t;
+		wc.width = sw + (w - sw) * t;
+		wc.height = sh + (h - sh) * t;
+		wc.border_width = c->bw;
+		XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
+		XSync(dpy, False);
+	}
+apply:
+	c->oldx = sx; c->x = wc.x = x;
+	c->oldy = sy; c->y = wc.y = y;
+	c->oldw = sw; c->w = wc.width = w;
+	c->oldh = sh; c->h = wc.height = h;
+	configure(c);
 }
 
 void
