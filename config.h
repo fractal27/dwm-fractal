@@ -21,7 +21,7 @@ static constexpr unsigned int tags_corner_diameter    = 00; /* rounded border of
 static constexpr unsigned int blocks_corner_diameter  = 00;  /* rounded border of in bar */
 
 static constexpr unsigned int borderpx  = 2;        /* border pixel of windows */
-static constexpr unsigned int animspeed = 100;        /* animation speed (frames) */
+static constexpr unsigned int animspeed = 70;        /* animation speed (frames) */
 static constexpr unsigned int snap      = 32;       /* snap pixel */
 static unsigned int gappih    = 15;       /* horiz inner gap between windows */
 static unsigned int gappiv    = 5;       /* vert inner gap between windows */
@@ -126,7 +126,7 @@ static const Layout layouts[] = {
 	{ "TTT",	bstack },               /* Master on top, slaves on bottom */
 
 	// { "[\\]",	dwindle },              /* Decreasing in size right and leftward */
-	{ "[D]",	deck },	                /* Master on left, slaves in monocle-like mode on right */
+	// { "[D]",	deck },	                /* Master on left, slaves in monocle-like mode on right */
 
 	{ "[M]",	monocle },              /* All windows on top of eachother */
 	{ "|M|",	centeredmaster },               /* Master in middle, slaves on sides */
@@ -243,7 +243,7 @@ static const Key keys[] = {
     // { MODKEY,			    XK_Tab,        view,                   {0} },
 	{ MODKEY,			    XK_q,          killclient,             {0} },
     { MODKEY,               XK_o,          spawn,                  SHCMD(BIN_PREFIX "timer_term -s -c \"$(echo | dmenu -p \"comment\" " SH_DMENU_FLAGS ")\" \"$(cat ~/.timers | dmenu "SH_DMENU_FLAGS" | cut -d \"#\" -f1 | xargs)\"") } ,
-    { MODKEY|ShiftMask,     XK_o,          spawn,                  SHCMD(BIN_PREFIX "/ws \"$(" BIN_PREFIX "/hnrss_reader | dmenu "SH_DMENU_FLAGS" | cut -d'|' -f2)\"") } ,
+    { MODKEY|ShiftMask,     XK_o,          spawn,                  SHCMD(BIN_PREFIX "ws \"$(" BIN_PREFIX "hnrss_reader | dmenu "SH_DMENU_FLAGS" | cut -d'|' -f2)\"") } ,
 	{ MODKEY|ShiftMask,	    XK_w,          spawn,                  SHCMD(BIN_PREFIX "ws $(dmenu " SH_DMENU_FLAGS " < ~/.websites)") },
 
 	{ MODKEY|ShiftMask,		XK_q,          quit,                   {.i = 0} },
@@ -256,11 +256,11 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_e,          spawn,                  SHCMD(TERMINAL " -e abook -C ~/.config/abook/abookrc --datafile ~/.config/abook/addressbook") },
 	{ MODKEY,			    XK_r,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "sudo", "termshark", NULL } } },
 
-	{ MODKEY,	    XK_r,          setlayout,                      {.v = &layouts[0]} }, /* tile */
+	{ MODKEY,	    		XK_t,          setlayout,              {.v = &layouts[0]} }, /* tile */
 	{ MODKEY|ShiftMask,	    XK_t,          setlayout,              {.v = &layouts[1]} }, /* bstack */
 	{ MODKEY|ShiftMask,		XK_u,          setlayout,              {.v = &layouts[2]} }, /* monocle */
 	{ MODKEY,			    XK_i,          setlayout,              {.v = &layouts[3]} }, /* centeredmaster */
-	{ MODKEY|ShiftMask,		XK_i,          setlayout,              {.v = &layouts[4]} }, /* layout 4 */
+	{ MODKEY|ShiftMask,		XK_i,          setlayout,              {.v = &layouts[4]} }, /* quadlayout */
 	{ MODKEY,		        XK_e,          setlayout,              {.v = &layouts[5]} },
 
 	{ MODKEY|ShiftMask,		XK_p,          spawn,                  SHCMD("mpc pause; pauseallmpv") },

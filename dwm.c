@@ -1446,9 +1446,9 @@ quadlayout(Monitor *m) {
               n++;
        if (n == 0) return;
 
-       int center_w = mw * 0.65;
+       int center_w = mw * 0.6;
        int side_w   = mw * 0.25;
-       int h        = mh * 0.85;
+       int h        = mh * 0.8;
        int y        = (mh - h) / 2;
 
        // Find index of focused window
