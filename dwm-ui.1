@@ -1,0 +1,340 @@
+.TH DWM-UI 1 dwm\-VERSION
+.SH NAME
+dwm-ui \- keybinding and UI reference for dwm-fractal
+.SH DESCRIPTION
+This man page documents all keybindings, mouse bindings, layouts, and
+configuration of the dwm-fractal build. Mod is the Super (Windows) key
+(Mod4Mask). The status bar is at the bottom.
+.SH LAYOUTS
+.TP
+.B Mod\-t
+Tile layout (master left, slaves right).
+.TP
+.B Mod\-Shift\-t
+Bstack layout (master top, slaves bottom).
+.TP
+.B Mod\-Shift\-u
+Monocle layout (all windows stacked).
+.TP
+.B Mod\-i
+Centered master (master middle, slaves sides).
+.TP
+.B Mod\-Shift\-i
+Quad layout (centered master with floating master).
+.TP
+.B Mod\-e
+Floating layout (no tiling).
+.SH WINDOW MANAGEMENT
+.TP
+.B Mod\-j, Mod\-k
+Focus next/previous window.
+.TP
+.B Mod\-v
+Focus master window.
+.TP
+.B Mod\-Shift\-j, Mod\-Shift\-k
+Push focused window down/up in stack.
+.TP
+.B Mod\-Shift\-v
+Push focused window to master.
+.TP
+.B Mod\-h
+Decrease master area size by 5%.
+.TP
+.B Mod\-l
+Increase master area size by 5%.
+.TP
+.B Mod\-q
+Kill focused client.
+.TP
+.B Mod\-Space
+Zoom \(em swap focused window with master.
+.TP
+.B Mod\-Shift\-Space
+Toggle floating/tiled state.
+.TP
+.B Mod\-f
+Toggle fullscreen.
+.TP
+.B Mod\-s
+Toggle sticky.
+.TP
+.B Mod\-Left, Mod\-Right
+Focus previous/next client.
+.TP
+.B Mod\-Return
+Spawn terminal (st).
+.TP
+.B Mod\-Shift\-Return
+Toggle scratchpad terminal (120x34).
+.SH TAG MANAGEMENT
+Tags: term, browse1, browse2, monitor, 5, 6, 7, 8, 9.
+.TP
+.B Mod\-[1..9]
+View tag.
+.TP
+.B Mod\-Ctrl\-[1..9]
+Toggle tag visibility.
+.TP
+.B Mod\-Shift\-[1..9]
+Move client to tag.
+.TP
+.B Mod\-Shift\-Ctrl\-[1..9]
+Toggle tag on client.
+.TP
+.B Mod\-g, Mod\-Page_Up
+Cycle to previous tag.
+.TP
+.B Mod\-Page_Down
+Cycle to next tag.
+.TP
+.B Mod\-Shift\-g, Mod\-Shift\-Page_Up
+Move client to previous tag.
+.TP
+.B Mod\-Shift\-Page_Down
+Move client to next tag.
+.TP
+.B Mod\-Backslash
+View all tags.
+.SH GAPS
+.TP
+.B Mod\-a
+Toggle gaps on/off.
+.TP
+.B Mod\-Shift\-a
+Reset gaps to defaults.
+.TP
+.B Mod\-z
+Increase gaps by 3.
+.TP
+.B Mod\-x
+Decrease gaps by 3.
+.TP
+.B Mod\-Shift\-apostrophe
+Toggle smart gaps.
+.SH APPLICATION LAUNCHERS
+.TP
+.B Mod\-d
+App launcher (dmenu from apps list).
+.TP
+.B Mod\-Shift\-d
+Launch KeePassXC.
+.TP
+.B Mod\-w
+Launch qutebrowser.
+.TP
+.B Mod\-t
+Launch Tor Browser.
+.TP
+.B Mod\-v
+Launch editor (vim in terminal).
+.TP
+.B Mod\-Shift\-w
+Web search via dmenu.
+.TP
+.B Mod\-Shift\-o
+RSS reader via dmenu, open selection in browser.
+.TP
+.B Mod\-o
+Timer with dmenu.
+.TP
+.B Mod\-Shift\-e
+Launch abook (address book).
+.TP
+.B Mod\-r
+Launch termshark (sudo).
+.TP
+.B Mod\-BackSpace, Mod\-Shift\-BackSpace
+System action menu (sysact).
+.TP
+.B Mod\-b
+Kill a process by name (dmenu).
+.TP
+.B Mod\-Shift\-b
+Set random wallpaper (feh).
+.TP
+.B Mod\-Shift\-z
+Launch goom visualizer.
+.TP
+.B Mod\-n
+Launch drawop.
+.TP
+.B Mod\-m
+Launch sv.
+.TP
+.B Mod\-Shift\-m
+Music player (mpv) from ~/Personal/Mus.
+.TP
+.B Mod\-Shift\-v
+Launch FCEUX NES emulator.
+.SH MEDIA CONTROLS
+.TP
+.B Mod\-minus, Mod\-Shift\-minus
+Volume up by 5% and 15%.
+.TP
+.B Mod\-plus, Mod\-Shift\-plus
+Volume down by 5% and 15%.
+.TP
+.B Mod\-Shift\-p
+Pause all media (pauseallmpv).
+.SH MULTIMEDIA KEYS (no modifier)
+.TP
+.B AudioMute
+Toggle mute.
+.TP
+.B AudioRaiseVolume
+Volume +5%.
+.TP
+.B AudioLowerVolume
+Volume \-5%.
+.TP
+.B AudioMicMute
+Toggle microphone mute.
+.SH HELP
+.TP
+.B Mod\-F1
+Open this guide in terminal (man dwm-ui).
+.TP
+.B Mod\-Shift\-h
+Open this guide in terminal (man dwm-ui).
+.SH MISCELLANEOUS
+.TP
+.B Mod\-u
+Emoji picker (dmenu to xclip).
+.TP
+.B Mod\-Insert
+Snippet picker (dmenu to xdotool).
+.TP
+.B Mod\-F3
+Screenshot region (scrot \-s).
+.TP
+.B Mod\-F4
+Open alsamixer in terminal.
+.TP
+.B Mod\-F5
+Screen lock (alt config).
+.TP
+.B Mod\-F6
+Screen lock (default).
+.TP
+.B Mod\-F11
+Webcam viewer via mpv.
+.TP
+.B Mod\-Print
+Recording menu (dmenurecord).
+.TP
+.B Mod\-Shift\-Print, Mod\-Delete
+Kill recording (dmenurecord kill).
+.TP
+.B Mod\-Shift\-q
+Quit dwm.
+.TP
+.B Mod\-Shift\-r
+Restart dwm.
+.SH MOUSE BINDINGS
+.TP
+.B Mod\-Button1 on client
+Move window (floats it).
+.TP
+.B Mod\-Button3 on client
+Resize window (floats it).
+.TP
+.B Mod\-Button2 on client
+Reset gaps to default.
+.TP
+.B Mod\-Button4 on client
+Increase gaps by 1.
+.TP
+.B Mod\-Button5 on client
+Decrease gaps by 1.
+.TP
+.B Button2 on win title
+Zoom (swap with master).
+.TP
+.B Button1..5 on status text
+Signal dwmblocks blocks 1..5.
+.TP
+.B Shift\-Button1 on status text
+Signal dwmblocks block 6.
+.TP
+.B Shift\-Button3 on status text
+Edit dwmblocks config.h in vim.
+.TP
+.B Button1 on tag
+View tag.
+.TP
+.B Button3 on tag
+Toggle tag view.
+.TP
+.B Mod\-Button1 on tag
+Tag client.
+.TP
+.B Mod\-Button3 on tag
+Toggle tag on client.
+.TP
+.B Button4/5 on tag
+Cycle tags.
+.TP
+.B Button2 on root
+Toggle bar visibility.
+.SH APPEARANCE
+.TP
+.B Font
+IosevkaTerm Nerd Font 13pt.
+.TP
+.B Border
+2px.
+.TP
+.B Window corners
+24px (picom compositor).
+.TP
+.B Bar
+Bottom.
+.TP
+.B Snap
+32px.
+.TP
+.B Default mfact
+0.55.
+.TP
+.B Colors
+Tokyo Night inspired palette (see config.h for hex values). Schemes: Norm, Sel, Mem, Ok, Err, Date, HDD.
+.SH SIGNALS
+.TP
+.B SIGHUP (1)
+Restart dwm.
+.TP
+.B SIGTERM (15)
+Terminate dwm.
+.SH REQUIREMENTS
+The following external programs are required for full functionality:
+.TP 8
+.B Core
+st (terminal), dmenu (launcher), dwmblocks (status bar),
+picom (compositor), IosevkaTerm Nerd Font.
+.TP
+.B System
+pactl (volume), mpv (player), feh (wallpaper),
+scrot (screenshot), vim (editor), alsamixer.
+.TP
+.B Apps
+qutebrowser, Tor Browser, keepassxc, mupdf, fceux, abook,
+termshark, xclip, xdotool.
+.TP
+.B Custom scripts (\(ti/.local/bin/)
+m-apps (app launcher), timer_term, ws (url opener),
+hnrss_reader (RSS), img_select (wallpaper picker),
+goom (visualizer), drawop, sv (video browser),
+screenlock (lock screen), dmenurecord (recording),
+pauseallmpv, sysact (system menu).
+.TP
+.B dwmblocks depends
+free, df, date, awk, tail, rev, cut, ip, ping.
+.SH FILES
+.I config.h
+\(em compile-time configuration.
+.SH SEE ALSO
+.BR dwm (1),
+.BR dmenu (1),
+.BR st (1),
+.BR dwmblocks (1)

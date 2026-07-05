@@ -2,17 +2,18 @@
 /* NOTE: the runtime log file is at "$XDG_RUNTIME_DIR/dwm/dwm.log" */
 
 /* Constants */
+
 #define TERMINAL      "st"
-#define EDITOR        "vim"
 #define TERMCLASS     "St"
+
+#define EDITOR        "vim"
 #define EMU_ROMS      "~/Downloads/emu-roms"
 #define LAUNCH_BROWSER       SHCMD("m-apps launch zen")
-// #define LAUNCH_OTHER_BROWSER       SHCMD("m-apps launch qutebrowser")
 #define LAUNCH_TOR_BROWSER   SHCMD("m-apps launch start-tor-browser")
-#define MUS_PATH "~/Personal/Mus"
-#define MUS_PLAYER "mpv --no-video"
-
-#define BIN_PREFIX    "~/.local/bin/"
+#define MUS_PATH                   "~/Personal/Mus"
+#define MUS_PLAYER                 "mpv --no-video"
+#define PDF_VIEWER                 "mupdf"
+#define BIN_PREFIX                 "~/.local/bin/"
 
 /* appearance */
 static constexpr unsigned int default_corner_diameter = 24; /* rounded border of windows */
@@ -21,24 +22,25 @@ static constexpr unsigned int tags_corner_diameter    = 00; /* rounded border of
 static constexpr unsigned int blocks_corner_diameter  = 00;  /* rounded border of in bar */
 
 static constexpr unsigned int borderpx  = 2;        /* border pixel of windows */
-static constexpr unsigned int animspeed = 70;        /* animation speed (frames) */
+static constexpr unsigned int animspeed = 30;        /* animation speed (frames) */
+static constexpr unsigned int animdelay = 3200;     /* delay between frames in microseconds (~60fps) */
 static constexpr unsigned int snap      = 32;       /* snap pixel */
 static unsigned int gappih    = 15;       /* horiz inner gap between windows */
 static unsigned int gappiv    = 5;       /* vert inner gap between windows */
 static unsigned int gappoh    = 10;       /* horiz outer gap between windows and screen edge */
 static unsigned int gappov    = 15;       /* vert outer gap between windows and screen edge */
 static constexpr int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
-static int smartgaps          = 0;        /* 1 means no outer gap when there is only one window */
+static int smartgaps          = 1;        /* 1 means no outer gap when there is only one window */
 static int showbar            = 1;        /* 0 means no bar */
-static constexpr int topbar             = 1;        /* 0 means bottom bar */
-static char *fonts[]          = { "IosevkaTerm Nerd Font:size=17:antialias=true"  };
+static constexpr int topbar             = 0;        /* 0 means bottom bar */
+static char *fonts[]          = { "IosevkaTerm Nerd Font:size=13:antialias=true"  };
 
 static char normbgcolor[]           = "#1a1b26"; // "#282d42";
-static char normfgcolor[]           = "#666666";
+static char normfgcolor[]           = "#7a7e8f";
 #ifdef DEBUG_MODE
 static char normbordercolor[]       = "#ff0000";
 #else
-static char normbordercolor[]       = "#333333";
+static char normbordercolor[]       = "#2a2b36";
 #endif // DEBUG_MODE
 
 static char selfgcolor[]            = "#a9b1d6";
@@ -46,21 +48,22 @@ static char selfgcolor[]            = "#a9b1d6";
 static char selbgcolor[]            = "#121212";
 static char selbordercolor[]        = "#00ff00"; /*set to black to disable windows borders*/
 #else
-static char selbgcolor[]            = "#000000";
-static char selbordercolor[]        = "#aaaaaa"; /*set to black to disable windows borders*/
+static char selbgcolor[]            = "#252631";
+static char selbordercolor[]        = "#000000"; /*set to black to disable windows borders*/
 #endif
 
 static char memfgcolor[]            = "#89b4fa";
 static char membgcolor[]            = "#1e1e2e";
 static char membordercolor[]        = "#eeeeee";
 
-static char okfgcolor[]            = "#00ff00";
-static char okbgcolor[]            = "#1e1e2e";
-static char okbordercolor[]        = "#eeeeee";
+static char okfgcolor[]             = "#a6e3a1";
+static char okbgcolor[]             = "#1a1b26";
+static char okbordercolor[]         = "#a6e3a1";
 
-static char errfgcolor[]            = "#ff0000";
-static char errbgcolor[]            = "#1e1e2e";
-static char errbordercolor[]        = "#eeeeee";
+
+static char errfgcolor[]            = "#f38ba8";  // Softer red/pink
+static char errbgcolor[]            = "#1a1b26";
+static char errbordercolor[]        = "#f38ba8";
 
 static char datefgcolor[]            = "#a6adc8";
 static char datebgcolor[]            = "#1e1e2e";
@@ -158,10 +161,10 @@ static const Layout layouts[] = {
 
 /* commands */
 static const char* termcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL, NULL };
-static const char* editorcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL, "-e", EDITOR, NULL };
+static const char* editorcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL " -e "EDITOR, NULL };
 static Arg exec_once = SHCMD("picom "
 		"--corner-radius " str(default_corner_diameter/2)
-		"--backend " "glx"
+		"--backend " "xrender"
 		"-f "
 		"--fade-in-step " "0.08"
 		"-e " "1.0");
@@ -263,11 +266,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_i,          setlayout,              {.v = &layouts[4]} }, /* quadlayout */
 	{ MODKEY,		        XK_e,          setlayout,              {.v = &layouts[5]} },
 
-	{ MODKEY|ShiftMask,		XK_p,          spawn,                  SHCMD("mpc pause; pauseallmpv") },
-	{ MODKEY,			    XK_bracketleft, spawn,                 {.v = (const char*[]){ "mpc", "seek", "-10", NULL } } },
-	{ MODKEY|ShiftMask,		XK_bracketleft, spawn,                 {.v = (const char*[]){ "mpc", "seek", "-60", NULL } } },
-	{ MODKEY,			    XK_bracketright, spawn,                {.v = (const char*[]){ "mpc", "seek", "+10", NULL } } },
-	{ MODKEY|ShiftMask,		XK_bracketright, spawn,                {.v = (const char*[]){ "mpc", "seek", "+60", NULL } } },
+	{ MODKEY|ShiftMask,		XK_p,          spawn,                  SHCMD("pauseallmpv") },
 	{ MODKEY,			    XK_backslash,  view,                   {0} },
 	/* { MODKEY|ShiftMask,		XK_backslash,  spawn,                  SHCMD("") }, */
 
@@ -275,7 +274,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_a,          defaultgaps,            {0} },
 	{ MODKEY,			    XK_s,          togglesticky,           {0} },
 	{ MODKEY,			    XK_d,          spawn,                  SHCMD(BIN_PREFIX "m-apps launch \"$(cat ~/.local/share/apps/apps.ttext | dmenu "SH_DMENU_FLAGS" | cut -d '/' -f2)\"")}, /*-z 500 -x 300 -y 500 -l 12 -fn 'MathJax_Typewriter:size=25'*/
-	{ MODKEY|ShiftMask,		XK_d,          spawn,                  {.v = (const char*[]){ "keepassxc", DMENU_FLAGS, NULL } } },
+	{ MODKEY|ShiftMask,		XK_d,          spawn,                  {.v = (const char*[]){ "keepassxc", NULL } } },
 	{ MODKEY,			    XK_f,          togglefullscr,          {0} },
 	{ MODKEY|ShiftMask,		XK_f,          setlayout,              {.v = &layouts[8]} },
 	{ MODKEY,			    XK_g,          shiftview,              { .i = -1 } },
@@ -296,17 +295,12 @@ static const Key keys[] = {
 	{ MODKEY,			XK_x,          incrgaps,               {.i = -3 } },
 	{ MODKEY,			XK_b,          spawn,                  SHCMD("kill -9 $(ps ax -o comm x -u $USER | tail -n +2 | dmenu | xargs pidof)")},
 	{ MODKEY|ShiftMask, XK_b,          spawn,                  SHCMD("feh --bg-fill $(" BIN_PREFIX "img_select ~/.wallpapers/*)")},
-	{ MODKEY|ShiftMask,	XK_z,          spawn,                  SHCMD(BIN_PREFIX "boomer") },
+	{ MODKEY|ShiftMask,	XK_z,          spawn,                  SHCMD(BIN_PREFIX "goom") },
 	{ MODKEY,			XK_n,          spawn,                  SHCMD(BIN_PREFIX "drawop") },
 	{ MODKEY,			XK_m,          spawn,                  SHCMD(BIN_PREFIX "sv") },
-	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("mus=$(ls -1 --color=never " MUS_PATH " | dmenu " SH_DMENU_FLAGS ");[ \"$mus\" != \"\" ] && " MUS_PLAYER " " MUS_PATH "/$mus") },
+	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("mus=$(ls -1 --color=never " MUS_PATH " | dmenu " SH_DMENU_FLAGS ");[ \"$mus\" != \"\" ] && " MUS_PLAYER " " MUS_PATH "/\"$mus\"") },
 	{ MODKEY,	        XK_v,          spawn,                  {.v = editorcmd } },
 	{ MODKEY|ShiftMask,	XK_v,          spawn,                  SHCMD("fceux "EMU_ROMS"/$(ls -1 -f " EMU_ROMS "| dmenu " SH_DMENU_FLAGS ")") },
-	{ MODKEY,			XK_comma,      spawn,                  {.v = (const char*[]){ "mpc", "prev", NULL } } },
-	{ MODKEY|ShiftMask,	XK_comma,      spawn,                  {.v = (const char*[]){ "mpc", "seek", "0%", NULL } } },
-	{ MODKEY,			XK_period,     spawn,                  {.v = (const char*[]){ "mpc", "next", NULL } } },
-	{ MODKEY|ShiftMask,	XK_period,     spawn,                  {.v = (const char*[]){ "mpc", "repeat", NULL } } },
-
 	{ MODKEY,			XK_Left,       focusprev,               {.i = 0 } },
 	{ MODKEY,			XK_Right,      focusnext,               {.i = 0 } },
 
@@ -316,28 +310,25 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,	XK_Page_Down,  shifttag,               { .i = +1 } },
 	{ MODKEY,			XK_Insert,     spawn,                  SHCMD("xdotool type $(grep -v '^#' ~/.local/share/larbs/snippets | dmenu -i -l 50 | cut -d' ' -f1)") },
 
+	{ MODKEY,			XK_F1,         spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "man", "dwm-ui", NULL } } },
+	{ MODKEY|ShiftMask,		XK_h,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "man", "dwm-ui", NULL } } },
 	{ MODKEY,			XK_F3,         spawn,                  {.v = (const char*[]){ "scrot", "-s", NULL } } },
 	{ MODKEY,			XK_F4,         spawn,                  SHCMD(TERMINAL " -e alsamixer; kill -44 $(pidof dwmblocks)") },
-	{ MODKEY,			XK_F5,         xrdb,                   {.v = NULL } },
+	{ MODKEY,			XK_F5,         spawn,                  SHCMD(BIN_PREFIX "screenlock -c $HOME/.config/screenlock/config_alt") },
+	{ MODKEY,			XK_F6,         spawn,                  SHCMD(BIN_PREFIX "screenlock") },
+	{ MODKEY,			XK_F8,         spawn,                  SHCMD(BIN_PREFIX "btconnect") },
 	{ MODKEY,			XK_F11,        spawn,                  SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam $(ls /dev/video[0,2,4,6,8] | tail -n 1)") },
 	{ MODKEY,			XK_space,      zoom,                   {0} },
 	{ MODKEY|ShiftMask,	XK_space,      togglefloating,         {0} },
 
-	{ ShiftMask,	    XK_Print,      spawn,                  {.v = (const char*[]){ "maimpick", NULL } } },
-	{ MODKEY,			XK_Print,      spawn,		       {.v = (const char*[]){ "dmenurecord", NULL } } },
+	{ MODKEY,			XK_period,     lock_c,            {0} },
+	{ MODKEY,			XK_Print,      spawn,		           {.v = (const char*[]){ "dmenurecord", NULL } } },
 	{ MODKEY|ShiftMask,	XK_Print,      spawn,                  {.v = (const char*[]){ "dmenurecord", "kill", NULL } } },
 	{ MODKEY,			XK_Delete,     spawn,                  {.v = (const char*[]){ "dmenurecord", "kill", NULL } } },
 
 	{ 0, XF86XK_AudioMute,                         spawn,                  SHCMD(VOLUME_MUTE VOLUME_UPDATE_BLOCK) },
 	{ 0, XF86XK_AudioRaiseVolume,                  spawn,                  SHCMD(VOLUME_PLUS5PERC) },
 	{ 0, XF86XK_AudioLowerVolume,                  spawn,                  SHCMD(VOLUME_MINUS5PERC) },
-	{ 0, XF86XK_AudioPrev,                         spawn,                  {.v = (const char*[]){ "mpc", "prev", NULL } } },
-	{ 0, XF86XK_AudioNext,                         spawn,                  {.v = (const char*[]){ "mpc",  "next", NULL } } },
-	{ 0, XF86XK_AudioPause,                        spawn,                  {.v = (const char*[]){ "mpc", "pause", NULL } } },
-	{ 0, XF86XK_AudioPlay,                         spawn,                  {.v = (const char*[]){ "mpc", "play", NULL } } },
-	{ 0, XF86XK_AudioStop,                         spawn,                  {.v = (const char*[]){ "mpc", "stop", NULL } } },
-	{ 0, XF86XK_AudioRewind,                       spawn,                  {.v = (const char*[]){ "mpc", "seek", "-10", NULL } } },
-	{ 0, XF86XK_AudioForward,                      spawn,                  {.v = (const char*[]){ "mpc", "seek", "+10", NULL } } },
 	{ 0, XF86XK_AudioMicMute,                      spawn,                  SHCMD("pactl set-source-mute @DEFAULT_SOURCE@ toggle") },
 	/* { MODKEY,                    XK_y,          incrihgaps,             {.i = +1 } }, */
 	/* { MODKEY,                    XK_o,          incrihgaps,             {.i = -1 } }, */

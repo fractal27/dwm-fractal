@@ -227,15 +227,38 @@ drw_setscheme(Drw *drw, Clr *scm)
 }
 
 void
-drw_rect(Drw *drw, int x, int y, unsigned int w, unsigned int h, int filled, int invert)
+drw_rounded_box(Display* dpy, Window drawable, GC gc, int x, int y, unsigned int w, unsigned int h, int corner_diameter){
+		// XDrawRectangle(dpy, drawable, gc, x, y, w - 1, h - 1);
+		int start_border_x = x + corner_diameter/2 - 1;
+		int end_border_x = x + w - corner_diameter/2 + 1;
+
+		XDrawLine(dpy, drawable, gc, start_border_x,	y,
+							   				end_border_x,	y);
+		XDrawLine(dpy, drawable, gc, start_border_x,	y + h - 1,
+													end_border_x,	y + h - 1);
+		if(corner_diameter){
+			XDrawLine(dpy, drawable, gc, x, y + corner_diameter/2, x, h - corner_diameter/2);
+			XDrawArc(dpy, drawable, gc, x + 1, y, corner_diameter, corner_diameter, 90*64, 90*64);
+			XDrawArc(dpy, drawable, gc, x + 1, y + (h - corner_diameter), corner_diameter, corner_diameter, 180*64, 90*64);
+		} 
+		if(corner_diameter){
+			XDrawLine(dpy, drawable, gc, x + w - 1, y + corner_diameter/2,
+														x + w - 1, y + h - corner_diameter/2 + 1);
+			XDrawArc(dpy, drawable, gc, x + w - 1 - corner_diameter, y + (h - corner_diameter), corner_diameter, corner_diameter, 270*64, 90*64);
+			XDrawArc(dpy, drawable, gc, x + w - 1 - corner_diameter, y, corner_diameter, corner_diameter, 0*64, 90*64);
+		}
+}
+void
+drw_rect(Drw *drw, int x, int y, unsigned int w, unsigned int h, int filled, int invert, int corner_diameter)
 {
 	if (!drw || !drw->scheme)
 		return;
 	XSetForeground(drw->dpy, drw->gc, invert ? drw->scheme[ColBg].pixel : drw->scheme[ColFg].pixel);
 	if (filled)
 		XFillRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w, h);
-	else
-		XDrawRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w - 1, h - 1);
+	else {
+		drw_rounded_box(drw->dpy, drw->drawable, drw->gc, x, y, drw->w, drw->h, corner_diameter);
+	}
 }
 
 

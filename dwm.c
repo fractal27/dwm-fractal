@@ -45,6 +45,8 @@
 #include <X11/Xft/Xft.h>
 #include <X11/Xlib-xcb.h>
 #include <xcb/res.h>
+#include <security/pam_appl.h>
+#include <pwd.h>
 
 #include <stdlib.h>
 #include "drw.h"
@@ -123,14 +125,20 @@ struct Client {
 	int oldx, oldy, oldw, oldh;
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
 	int bw, oldbw;
+	int animt;
 	unsigned int tags;
 	int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, isterminal, noswallow, issticky;
+	int islocked;
 	pid_t pid;
 	Client *next;
 	Client *snext;
 	Client *swallowing;
 	Monitor *mon;
 	Window win;
+	Window lockwin;
+	char pwbuf[256];
+	int pwlen;
+	int pwfail;
 };
 
 typedef struct {
@@ -195,6 +203,12 @@ typedef struct {
 } ResourcePref;
 
 /* function declarations */
+static void auth_check(const char *user, const char *pass, char *result, size_t rlen);
+static const char *current_user(void);
+static void lock_c(const Arg *arg);
+static void lockclient(Client *c);
+static void unlockclient(Client *c);
+static void drawlockui(Client *c);
 static void applyrules(Client *c);
 static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact);
 static void arrange(Monitor *m);
@@ -315,7 +329,7 @@ static pid_t winpid(Window w);
 
 
 /* variables */
-static const char broken[] = "broken";
+static const char broken[] = "Unnamed";
 static char stext[256];
 static char rawstext[256];
 static int dwmblockssig;
@@ -324,6 +338,7 @@ static int screen;
 static int sw, sh;           /* X display screen geometry width, height */
 static int bh;               /* bar height */
 static int lrpad;            /* sum of left and right padding for text */
+static const int LOCK_PW_MAX = 256;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0;
 static void (*handler[LASTEvent]) (XEvent *) = {
@@ -402,6 +417,128 @@ applyrules(Client *c)
 	if (ch.res_name)
 		XFree(ch.res_name);
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : (c->mon->tagset[c->mon->seltags] & ~SPTAGMASK);
+}
+
+/* ── Password-based window lock ───────────────────────────── */
+
+struct pa_ctx { const char *pw; };
+
+static int
+pa_cb(int n, const struct pam_message **ms,
+      struct pam_response **rs, void *d)
+{
+	struct pa_ctx *cx = d;
+	if (!ms || !rs || !d || n < 1 || n > 16) return PAM_CONV_ERR;
+	struct pam_response *r = calloc((size_t)n, sizeof(*r));
+	if (!r) return PAM_BUF_ERR;
+	*rs = r;
+	for (int i = 0; i < n; i++) {
+		if (ms[i] && ms[i]->msg_style == PAM_PROMPT_ECHO_OFF) {
+			r[i].resp = strdup(cx->pw);
+			if (!r[i].resp) return PAM_BUF_ERR;
+		}
+	}
+	return PAM_SUCCESS;
+}
+
+static void
+auth_check(const char *user, const char *pass, char *result, size_t rlen)
+{
+	if (!user || !pass) { snprintf(result, rlen, "ERR"); return; }
+	pam_handle_t *ph = NULL;
+	struct pa_ctx cx = { pass };
+	struct pam_conv cv = { &pa_cb, &cx };
+	int r = pam_start("system-auth", user, &cv, &ph);
+	if (r != PAM_SUCCESS) { snprintf(result, rlen, "ERR"); return; }
+	r = pam_authenticate(ph, 0);
+	if (r != PAM_SUCCESS) { snprintf(result, rlen, "NO"); pam_end(ph, r); return; }
+	r = pam_acct_mgmt(ph, 0);
+	if (r != PAM_SUCCESS) { snprintf(result, rlen, "NO"); pam_end(ph, r); return; }
+	pam_end(ph, PAM_SUCCESS);
+	snprintf(result, rlen, "OK");
+}
+
+static const char *
+current_user(void)
+{
+	struct passwd *pw = getpwuid(getuid());
+	return pw ? pw->pw_name : "unknown";
+}
+
+static void
+drawlockui(Client *c)
+{
+	if (!c->lockwin) return;
+	GC gc = XCreateGC(dpy, c->lockwin, 0, NULL);
+	XSetForeground(dpy, gc, 0x1a1b26);
+	XFillRectangle(dpy, c->lockwin, gc, 0, 0, c->w, c->h);
+	XSetForeground(dpy, gc, 0x7a7e8f);
+	XDrawRectangle(dpy, c->lockwin, gc, 0, 0, c->w - 1, c->h - 1);
+	XSetForeground(dpy, gc, 0xa9b1d6);
+	const char *user = current_user();
+	char line[512];
+	snprintf(line, sizeof line, "Locked: %.200s", c->name);
+	XDrawString(dpy, c->lockwin, gc, 20, 30, line, strlen(line));
+	snprintf(line, sizeof line, "User: %s", user);
+	XDrawString(dpy, c->lockwin, gc, 20, 55, line, strlen(line));
+	char dots[256];
+	int di;
+	for (di = 0; di < c->pwlen && di < 64; di++)
+		dots[di] = '*';
+	dots[di] = '\0';
+	XDrawString(dpy, c->lockwin, gc, 20, 80, dots, strlen(dots));
+	if (c->pwfail) {
+		XSetForeground(dpy, gc, 0xf38ba8);
+		XDrawString(dpy, c->lockwin, gc, 20, 105, "Incorrect password", 18);
+	}
+	XFreeGC(dpy, gc);
+}
+
+static void
+lockclient(Client *c)
+{
+	if (!c || c->islocked) return;
+	XSetWindowAttributes wa;
+	wa.override_redirect = True;
+	wa.event_mask = ExposureMask | KeyPressMask;
+	int cx = c->x + c->bw;
+	int cy = c->y + c->bw;
+	if (cx < 0) cx = 0;
+	if (cy < 0) cy = 0;
+	c->lockwin = XCreateWindow(dpy, root, cx, cy, c->w, c->h, 1,
+		CopyFromParent, InputOutput, CopyFromParent,
+		CWOverrideRedirect | CWEventMask, &wa);
+	XMapWindow(dpy, c->lockwin);
+	XRaiseWindow(dpy, c->lockwin);
+	XSetInputFocus(dpy, c->lockwin, RevertToPointerRoot, CurrentTime);
+	drawlockui(c);
+	c->islocked = 1;
+	c->pwlen = 0;
+	c->pwfail = 0;
+	c->pwbuf[0] = '\0';
+}
+
+static void
+unlockclient(Client *c)
+{
+	if (!c || !c->islocked) return;
+	if (c->lockwin) {
+		XDestroyWindow(dpy, c->lockwin);
+		c->lockwin = 0;
+	}
+	c->islocked = 0;
+	c->pwlen = 0;
+	c->pwfail = 0;
+	c->pwbuf[0] = '\0';
+	XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
+}
+
+static void 
+lock_c(const Arg *arg)
+{
+	if(selmon->sel == NULL) return;
+	Client* sel = selmon->sel;
+	lockclient(sel);
 }
 
 int
@@ -788,6 +925,14 @@ configurerequest(XEvent *e)
 				configure(c);
 			if (ISVISIBLE(c))
 				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
+			if (c->islocked && c->lockwin) {
+				int lx = c->x + c->bw;
+				int ly = c->y + c->bw;
+				if (lx < 0) lx = 0;
+				if (ly < 0) ly = 0;
+				XMoveWindow(dpy, c->lockwin, lx, ly);
+				XRaiseWindow(dpy, c->lockwin);
+			}
 		} else
 			configure(c);
 	} else {
@@ -1014,7 +1159,7 @@ drawbar(Monitor *m)
 				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);*/
 		} else {
 			drw_setscheme(drw, scheme[SchemeNorm]);
-			drw_rect(drw, x, 0, w, bh, 1, 1);
+			drw_rect(drw, x, 0, w, bh, 1, 1, default_corner_diameter + 5);
 		}
 	}
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
@@ -1052,10 +1197,17 @@ void
 expose(XEvent *e)
 {
 	Monitor *m;
+	Client *c;
 	XExposeEvent *ev = &e->xexpose;
 
-	if (ev->count == 0 && (m = wintomon(ev->window)))
-		drawbar(m);
+	if (ev->count == 0) {
+		if ((m = wintomon(ev->window)))
+			drawbar(m);
+		for (m = mons; m; m = m->next)
+			for (c = m->clients; c; c = c->next)
+				if (c->islocked && c->lockwin == ev->window)
+					drawlockui(c);
+	}
 }
 
 void
@@ -1094,8 +1246,10 @@ focusin(XEvent *e)
 {
 	XFocusChangeEvent *ev = &e->xfocus;
 
-	if (selmon->sel && ev->window != selmon->sel->win)
-		setfocus(selmon->sel);
+	if (selmon->sel && ev->window != selmon->sel->win) {
+		if (!selmon->sel->islocked)
+			setfocus(selmon->sel);
+	}
 }
 
 // void
@@ -1284,6 +1438,48 @@ keypress(XEvent *e)
 
 	ev = &e->xkey;
 	keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
+
+	/* If the focused client is locked, intercept unmodified keys for password input */
+	if (selmon->sel && selmon->sel->islocked) {
+		Client *c = selmon->sel;
+		if (!(ev->state & MODKEY)) {
+			if (keysym == 0xff0d || keysym == 0xff8d) { /* Return / KP_Enter */
+				if (c->pwlen > 0) {
+					c->pwbuf[c->pwlen] = '\0';
+					char result[8];
+					auth_check(current_user(), c->pwbuf, result, sizeof result);
+					if (strcmp(result, "OK") == 0) {
+						unlockclient(c);
+					} else {
+						c->pwfail = 1;
+						c->pwlen = 0;
+						c->pwbuf[0] = '\0';
+						drawlockui(c);
+					}
+				}
+			} else if (keysym == 0xff08) { /* BackSpace */
+				if (c->pwlen > 0) {
+					c->pwlen--;
+					c->pwbuf[c->pwlen] = '\0';
+					drawlockui(c);
+				}
+			} else {
+				char ch = '\0';
+				XLookupString(ev, &ch, 1, &keysym, NULL);
+				if (ch >= 32 && ch < 127) {
+					if (c->pwlen < LOCK_PW_MAX - 1) {
+						c->pwbuf[c->pwlen] = ch;
+						c->pwlen++;
+						c->pwfail = 0;
+						drawlockui(c);
+					}
+				}
+			}
+			return;
+		}
+		/* MODKEY pressed: fall through to normal keybinding dispatch */
+	}
+
 	for (i = 0; i < LENGTH(keys); i++)
 		if (keysym == keys[i].keysym
 		&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
@@ -1663,31 +1859,48 @@ smoothstep(float t)
 }
 
 void
+animate(Client *c)
+{
+	XWindowChanges wc;
+
+	if (!c || c->animt <= 0)
+		return;
+
+	c->animt--;
+	float t = smoothstep(1.0f - (float)c->animt / animspeed);
+	wc.x = c->oldx + (c->x - c->oldx) * t;
+	wc.y = c->oldy + (c->y - c->oldy) * t;
+	wc.width = c->oldw + (c->w - c->oldw) * t;
+	wc.height = c->oldh + (c->h - c->oldh) * t;
+	wc.border_width = c->bw;
+	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
+	XFlush(dpy);
+}
+
+void
 resizeclient(Client *c, int x, int y, int w, int h)
 {
 	XWindowChanges wc;
-	float sx = c->x, sy = c->y, sw = c->w, sh = c->h;
-	float t;
 
-	if (x == sx && y == sy && w == sw && h == sh)
-		goto apply;
+	c->oldx = c->x; c->x = x;
+	c->oldy = c->y; c->y = y;
+	c->oldw = c->w; c->w = w;
+	c->oldh = c->h; c->h = h;
+	c->animt = animspeed;
 
-	for (int i = 1; i <= animspeed; i++) {
-		t = smoothstep((float)i / animspeed);
-		wc.x = sx + (x - sx) * t;
-		wc.y = sy + (y - sy) * t;
-		wc.width = sw + (w - sw) * t;
-		wc.height = sh + (h - sh) * t;
-		wc.border_width = c->bw;
-		XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
-		XSync(dpy, False);
-	}
-apply:
-	c->oldx = sx; c->x = wc.x = x;
-	c->oldy = sy; c->y = wc.y = y;
-	c->oldw = sw; c->w = wc.width = w;
-	c->oldh = sh; c->h = wc.height = h;
+	wc.x = c->x; wc.y = c->y;
+	wc.width = c->w; wc.height = c->h;
+	wc.border_width = c->bw;
+	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
 	configure(c);
+	if (c->islocked && c->lockwin) {
+		int lx = c->x + c->bw;
+		int ly = c->y + c->bw;
+		if (lx < 0) lx = 0;
+		if (ly < 0) ly = 0;
+		XMoveWindow(dpy, c->lockwin, lx, ly);
+		XRaiseWindow(dpy, c->lockwin);
+	}
 }
 
 void
@@ -1776,11 +1989,21 @@ void
 run(void)
 {
 	XEvent ev;
-	/* main event loop */
 	XSync(dpy, False);
-	while (running && !XNextEvent(dpy, &ev))
+	while (running && !XNextEvent(dpy, &ev)) {
 		if (handler[ev.type])
-			handler[ev.type](&ev); /* call handler */
+			handler[ev.type](&ev);
+
+		int animating = 0;
+		for (Client *c = selmon->clients; c; c = c->next) {
+			if (c->animt > 0) {
+				animate(c);
+				animating = 1;
+			}
+		}
+		if (animating)
+			usleep(animdelay);
+	}
 }
 
 void
@@ -1870,7 +2093,8 @@ void
 setfocus(Client *c)
 {
 	if (!c->neverfocus) {
-		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
+		Window target = (c->islocked && c->lockwin) ? c->lockwin : c->win;
+		XSetInputFocus(dpy, target, RevertToPointerRoot, CurrentTime);
 		XChangeProperty(dpy, root, netatom[NetActiveWindow],
 			XA_WINDOW, 32, PropModeReplace,
 			(unsigned char *) &(c->win), 1);
@@ -2097,6 +2321,14 @@ showhide(Client *c)
 		}
 		/* show clients top down */
 		XMoveWindow(dpy, c->win, c->x, c->y);
+		if (c->islocked && c->lockwin) {
+			int lx = c->x + c->bw, ly = c->y + c->bw;
+			if (lx < 0) lx = 0;
+			if (ly < 0) ly = 0;
+			XMoveWindow(dpy, c->lockwin, lx, ly);
+			XMapWindow(dpy, c->lockwin);
+			XRaiseWindow(dpy, c->lockwin);
+		}
 		if ((!c->mon->lt[c->mon->sellt]->arrange || c->isfloating) && !c->isfullscreen)
 			resize(c, c->x, c->y, c->w, c->h, 0);
 		showhide(c->snext);
@@ -2104,6 +2336,8 @@ showhide(Client *c)
 		/* hide clients bottom up */
 		showhide(c->snext);
 		XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
+		if (c->islocked && c->lockwin)
+			XUnmapWindow(dpy, c->lockwin);
 	}
 }
 
@@ -2366,6 +2600,8 @@ unfocus(Client *c, int setfocus)
 {
 	if (!c)
 		return;
+	if (c->islocked)
+		return;
 	grabbuttons(c, 0);
 	XSetWindowBorder(dpy, c->win, scheme[SchemeNorm][ColBorder].pixel);
 	if (setfocus) {
@@ -2408,6 +2644,8 @@ unmanage(Client *c, int destroyed)
 		XSetErrorHandler(xerror);
 		XUngrabServer(dpy);
 	}
+	if (c->islocked)
+		unlockclient(c);
 	free(c);
 
 	if (!s) {
