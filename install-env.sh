@@ -490,8 +490,9 @@ chmod +x "$USER_HOME/$BIN_DIR/dmenurecord"
 # pauseallmpv
 cat > "$USER_HOME/$BIN_DIR/pauseallmpv" << 'SCRIPT'
 #!/bin/sh
-# Pause all running mpv instances
-pkill -STOP mpv 2>/dev/null || true
+exec 3<>/tmp/mpvsocket
+echo '{"command": ["cycle", "pause"]}' >&3
+exec 3>&-
 SCRIPT
 chmod +x "$USER_HOME/$BIN_DIR/pauseallmpv"
 

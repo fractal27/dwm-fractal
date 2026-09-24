@@ -11,9 +11,17 @@
 #define LAUNCH_BROWSER       SHCMD("m-apps launch zen")
 #define LAUNCH_TOR_BROWSER   SHCMD("m-apps launch start-tor-browser")
 #define MUS_PATH                   "~/Personal/Mus"
-#define MUS_PLAYER                 "mpv --no-video"
+#define MUS_PLAYER                 "mpv --no-video --input-ipc-server=/tmp/mpvsocket"
 #define PDF_VIEWER                 "mupdf"
 #define BIN_PREFIX                 "~/.local/bin/"
+#define MPV_VID0_FLAGS "--profile=low-latency" \
+	" --video-latency-hacks=yes" \
+	" --no-cache av://v4l2:/dev/video0" \
+	" --demuxer-lavf-format=video4linux2" \
+	" --demuxer-lavf-o=input_format=mjpeg,video_size=720x720,framerate=60"
+
+#define MPV_CMD(X)                 "echo " X " | socat - /tmp/mpvsocket"
+#define NOTIFY(X)                  "herbe \"" X "\""
 
 /* appearance */
 static constexpr unsigned int default_corner_diameter = 24; /* rounded border of windows */
@@ -40,7 +48,7 @@ static char normfgcolor[]           = "#7a7e8f";
 #ifdef DEBUG_MODE
 static char normbordercolor[]       = "#ff0000";
 #else
-static char normbordercolor[]       = "#2a2b36";
+static char normbordercolor[]       = "#000000";
 #endif // DEBUG_MODE
 
 static char selfgcolor[]            = "#a9b1d6";
@@ -49,7 +57,7 @@ static char selbgcolor[]            = "#121212";
 static char selbordercolor[]        = "#00ff00"; /*set to black to disable windows borders*/
 #else
 static char selbgcolor[]            = "#252631";
-static char selbordercolor[]        = "#000000"; /*set to black to disable windows borders*/
+static char selbordercolor[]        = "#eeeeee"; /*set to black to disable windows borders*/
 #endif
 
 static char memfgcolor[]            = "#89b4fa";
@@ -162,6 +170,7 @@ static const Layout layouts[] = {
 /* commands */
 static const char* termcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL, NULL };
 static const char* editorcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL " -e "EDITOR, NULL };
+static const char* change_cfgcmd[]  = { "sh", "-c", BIN_PREFIX TERMINAL " -e "EDITOR, __FILE__, NULL };
 static Arg exec_once = SHCMD("picom "
 		"--corner-radius " str(default_corner_diameter/2)
 		"--backend " "xrender"
@@ -216,8 +225,8 @@ ResourcePref resources[] = {
 
 
 #define DMENU_RUN_PATH "~/.local/apps/terminal:~/.local/apps/gui"
-#define DMENU_FLAGS "-z","500","-x","300","-y","400","-l", "12", "-fn", "IosevkaTerm Nerd Font:size=25:style=Light,Regular" // "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
-#define SH_DMENU_FLAGS "-z 500 -x 300 -y 500 -l 12 -fn 'IosevkaTerm Nerd Font:style=Light,Regular:size=25'"                  // -m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+#define DMENU_FLAGS "-i","-z","800","-x","300","-y","400","-l", "12", "-fn", "IosevkaTerm Nerd Font:size=14:style=Light,Regular" // "-m", "$(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
+#define SH_DMENU_FLAGS "-i -z 800 -x 300 -y 500 -l 12 -fn 'IosevkaTerm Nerd Font:style=Light,Regular:size=14'"                  // -m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
 																									 //
 // dmenu flags are actually equal, but I haven't changed it.
 //-m $(expr `hyprctl monitors | grep focused | cut -d \":\" -f2 | grep -n yes | cut -d \":\" -f1` - 1)"
@@ -253,7 +262,7 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,	    XK_r,          quit,                   {.i = 1} },
 
 	{ MODKEY,			    XK_w,          spawn,                  LAUNCH_BROWSER },
-	// { MODKEY,	            XK_p,          spawn,                  LAUNCH_OTHER_BROWSER },
+	{ MODKEY,	            XK_p,          spawn,                  SHCMD("bluetoothctl connect $(echo 'devices' | bluetoothctl | grep ^Device | dmenu -p \"bluetooth connect\" | cut -d ' ' -f2)") },
 	{ MODKEY,			    XK_t,          spawn,                  LAUNCH_TOR_BROWSER },
 
 	{ MODKEY|ShiftMask,		XK_e,          spawn,                  SHCMD(TERMINAL " -e abook -C ~/.config/abook/abookrc --datafile ~/.config/abook/addressbook") },
@@ -266,7 +275,10 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_i,          setlayout,              {.v = &layouts[4]} }, /* quadlayout */
 	{ MODKEY,		        XK_e,          setlayout,              {.v = &layouts[5]} },
 
-	{ MODKEY|ShiftMask,		XK_p,          spawn,                  SHCMD("pauseallmpv") },
+	{ MODKEY|ShiftMask,		XK_p,          spawn,                  SHCMD("result=$(" MPV_CMD("'{\"command\": [\"cycle\",\"pause\"]}\'") " | jq .error);" NOTIFY("pause:$result")) },
+	{ MODKEY|ShiftMask,		XK_n,          spawn,                  SHCMD("result=$(" MPV_CMD("'{\"command\": [\"playlist-next\"]}\'")   " | jq .error);" NOTIFY("next-playlist:$result")) },
+	{ MODKEY|ShiftMask,		XK_l,          spawn,                  SHCMD("result=$(" MPV_CMD("'{\"command\": [\"cycle\", \"loop\"]}\'") " | jq .error);" NOTIFY("loop:$result")) },
+	// { MODKEY|ShiftMask,     XK_backslash,  {"command": ["quit-watch-later"], "request_id": 1}
 	{ MODKEY,			    XK_backslash,  view,                   {0} },
 	/* { MODKEY|ShiftMask,		XK_backslash,  spawn,                  SHCMD("") }, */
 
@@ -295,11 +307,13 @@ static const Key keys[] = {
 	{ MODKEY,			XK_x,          incrgaps,               {.i = -3 } },
 	{ MODKEY,			XK_b,          spawn,                  SHCMD("kill -9 $(ps ax -o comm x -u $USER | tail -n +2 | dmenu | xargs pidof)")},
 	{ MODKEY|ShiftMask, XK_b,          spawn,                  SHCMD("feh --bg-fill $(" BIN_PREFIX "img_select ~/.wallpapers/*)")},
-	{ MODKEY|ShiftMask,	XK_z,          spawn,                  SHCMD(BIN_PREFIX "goom") },
+	/* { MODKEY|ShiftMask,	XK_z,          spawn,                  SHCMD(BIN_PREFIX "goom") }, */
 	{ MODKEY,			XK_n,          spawn,                  SHCMD(BIN_PREFIX "drawop") },
 	{ MODKEY,			XK_m,          spawn,                  SHCMD(BIN_PREFIX "sv") },
-	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("mus=$(ls -1 --color=never " MUS_PATH " | dmenu " SH_DMENU_FLAGS ");[ \"$mus\" != \"\" ] && " MUS_PLAYER " " MUS_PATH "/\"$mus\"") },
-	{ MODKEY,	        XK_v,          spawn,                  {.v = editorcmd } },
+	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("mus=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | grep -v '.py' | dmenu " SH_DMENU_FLAGS ");[ \"$mus\" != \"\" ] && " MUS_PLAYER " " MUS_PATH "/\"$mus\"") },
+	{ MODKEY,			XK_c,          spawn,                  SHCMD("tag=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | sed 's/_.*//' | tr ',' '\\n' | sort -u | dmenu -p \"Tag:\" " SH_DMENU_FLAGS ");[ -n \"$tag\" ] && { find " MUS_PATH " | grep -v '.sh' | grep -v '.py' | grep -E \"(^|,)$tag(,|_)\" | xargs -d '\\n' " MUS_PLAYER "; }") },
+	{ MODKEY|ShiftMask,	XK_c,          spawn,                  SHCMD("author=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | sed 's/.*_//;s/\\.[^.]*$//' | sort -u | dmenu -p \"Author:\" " SH_DMENU_FLAGS ");[ -n \"$author\" ] && { find " MUS_PATH " | grep -v '.sh' | grep -v '.py' | grep -F \"_${author}.\" | xargs -d '\\n' " MUS_PLAYER "; }") },
+	{ MODKEY,	        XK_v,          spawn,                  {.v = change_cfgcmd } },
 	{ MODKEY|ShiftMask,	XK_v,          spawn,                  SHCMD("fceux "EMU_ROMS"/$(ls -1 -f " EMU_ROMS "| dmenu " SH_DMENU_FLAGS ")") },
 	{ MODKEY,			XK_Left,       focusprev,               {.i = 0 } },
 	{ MODKEY,			XK_Right,      focusnext,               {.i = 0 } },
@@ -317,7 +331,7 @@ static const Key keys[] = {
 	{ MODKEY,			XK_F5,         spawn,                  SHCMD(BIN_PREFIX "screenlock -c $HOME/.config/screenlock/config_alt") },
 	{ MODKEY,			XK_F6,         spawn,                  SHCMD(BIN_PREFIX "screenlock") },
 	{ MODKEY,			XK_F8,         spawn,                  SHCMD(BIN_PREFIX "btconnect") },
-	{ MODKEY,			XK_F11,        spawn,                  SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam $(ls /dev/video[0,2,4,6,8] | tail -n 1)") },
+	{ MODKEY,			XK_F11,        spawn,                  SHCMD("mpv " MPV_VID0_FLAGS) },
 	{ MODKEY,			XK_space,      zoom,                   {0} },
 	{ MODKEY|ShiftMask,	XK_space,      togglefloating,         {0} },
 
