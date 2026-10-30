@@ -1,213 +1,353 @@
-.TH DWM 1 dwm\-VERSION
+.TH DWM-UI 1 dwm\-1.0.6
 .SH NAME
-dwm \- dynamic window manager (Luke Smith <https://lukesmith.xyz>'s build)
-.SH SYNOPSIS
-.B dwm
-.RB [ \-v ]
+dwm-ui \- keybinding and UI reference for dwm-fractal
 .SH DESCRIPTION
-dwm is a dynamic window manager for X.
-.P
-dwm "orders" windows based on recency and primacy, while dwm layouts may
-change, the most recent "master" window is shown in the most prominent
-position. There are bindings for cycling through and promoting windows to the
-master position.
-.P
-Windows are grouped by tags. Each window can be tagged with one or multiple
-tags. Selecting certain tags displays all windows with these tags.
-.P
-Each screen contains a small status bar which displays all available tags, the
-layout, the title of the focused window, and the text read from the root window
-name property, if the screen is focused. A floating window is indicated with an
-empty square and a maximised floating window is indicated with a filled square
-before the windows title.  The selected tags are indicated with a different
-color. The tags of the focused window are indicated with a filled square in the
-top left corner.  The tags which are applied to one or more windows are
-indicated with an empty square in the top left corner.
-.P
-dwm draws a small border around windows to indicate the focus state.
-.SH OPTIONS
+This man page documents all keybindings, mouse bindings, layouts, and
+configuration of the dwm-fractal build. Mod is the Super (Windows) key
+(Mod4Mask). The status bar is at the bottom.
+.SH LAYOUTS
 .TP
-.B \-v
-prints version information to stderr, then exits.
-.SH USAGE
-.SS Status bar
+.B Mod\-t
+Tile layout (master left, slaves right).
 .TP
-.B X root window name
-is read and displayed in the status text area. It can be set with the
-.BR xsetroot (1)
-command.
+.B Mod\-Shift\-t
+Bstack layout (master top, slaves bottom).
 .TP
-.B Left click
-click on a tag label to display all windows with that tag, click on the layout
-label toggles between tiled and floating layout.
+.B Mod\-Shift\-u
+Monocle layout (all windows stacked).
 .TP
-.B Right click
-click on a tag label adds/removes all windows with that tag to/from the view.
+.B Mod\-i
+Centered master (master middle, slaves sides).
 .TP
-.B Super\-Left click
-click on a tag label applies that tag to the focused window.
+.B Mod\-Shift\-i
+Quad layout (Centered master with floating squashed windows on sides).
 .TP
-.B Super\-Right click
-click on a tag label adds/removes that tag to/from the focused window.
-.SS Keyboard commands
+.B Mod\-e
+Floating layout (no tiling).
+.SH WINDOW MANAGEMENT
 .TP
-.B Super\-Return
-Start terminal,
-.BR st(1).
-.TP
-.B Super\-d
-Spawn
-.BR dmenu(1)
-for launching other programs.
-.TP
-.B Super\-u
-Spawn
-.BR dmenu(1)
-for selecting emoji.
-.TP
-.B Super\-minus/plus, Super\-Shift\-minus/plus
-Decrease/increase volume by 5 and 15 respectively.
-.TP
-.B Super\-b
-Toggles bar on and off.
-.TP
-.B Super\-q
-Close focused window.
-.TP
-.B Super\-T
-Sets bstack layout.
-.TP
-.B Super\-f
-Toggle fullscreen window.
-.TP
-.B Super\-F
-Toggle floating layout.
-.TP
-.B Super\-y/Y
-Sets Fibonacci spiral/dwinde layouts.
-.TP
-.B Super\-u/U
-Sets centered master layout.
-.TP
-.B Super\-i/I
-Sets centered master or floating master layouts.
-.TP
-.B Super\-space
-Zooms/cycles focused window to/from master area.
-.TP
-.B Super\-j/k
+.B Mod\-j, Mod\-k
 Focus next/previous window.
 .TP
-.B Super\-Shift\-j/k
-Move selected window down/up in stack.
+.B Mod\-v
+Focus master window.
 .TP
-.B Super\-o/O
-Increase/decrease number of windows in master area.
+.B Mod\-Shift\-j, Mod\-Shift\-k
+Push focused window down/up in stack.
 .TP
-.B Super\-l
-Increase master area size.
+.B Mod\-Shift\-v
+Push focused window to master.
 .TP
-.B Super\-h
-Decrease master area size.
+.B Mod\-h
+Decrease master area size by 5%.
 .TP
-.B Super\-Shift\-space
-Toggle focused window between tiled and floating state.
+.B Mod\-l
+Increase master area size by 5%.
 .TP
-.B Super\-Tab
-Toggles to the previously selected tags.
+.B Mod\-q
+Kill focused client.
 .TP
-.B Super\-g
-Moves to the previous tag.
+.B Mod\-Space
+Zoom \(em swap focused window with master.
 .TP
-.B Super\-Shift\-g
-Moves selected window to the previous tag.
+.B Mod\-Shift\-Space
+Toggle floating/tiled state.
 .TP
-.B Super\-;
-Moves to the next tag.
+.B Mod\-f
+Toggle fullscreen.
 .TP
-.B Super\-Shift\-;
-Moves selected window to the next tag.
+.B Mod\-s
+Toggle sticky(particularly useful with webcam... see Mod\-F11)
 .TP
-.B Super\-PageUp
-Moves to the previous tag.
+.B Mod\-Left, Mod\-Right
+Focus previous/next client without wrapping.
 .TP
-.B Super\-Shift\-PageUp
-Moves selected window to the previous tag.
+.B Mod\-Return
+Spawn terminal (st).
 .TP
-.B Super\-Pagedown
-Moves to the next tag.
+.B Mod\-Shift\-Return
+Toggle scratchpad terminal (120x34).
+.SH TAG MANAGEMENT
+Tags: term, browse1, browse2, monitor, 5, 6, 7, 8, 9.
 .TP
-.B Super\-Shift\-PageDown
-Moves selected window to the next tag.
+.B Mod\-[1..9]
+View tag.
 .TP
-.B Super\-a
-Toggle gaps.
+.B Mod\-Ctrl\-[1..9]
+Toggle tag visibility.
 .TP
-.B Super\-z
-Increase gaps between windows.
+.B Mod\-Shift\-[1..9]
+Move client to tag.
 .TP
-.B Super\-x
-Decrease gaps between windows.
+.B Mod\-Shift\-Ctrl\-[1..9]
+Toggle tag on client.
 .TP
-.B Super\-Shift\-[1..n]
-Apply nth tag to focused window.
+.B Mod\-g, Mod\-Page_Up
+Cycle to previous tag.
 .TP
-.B Super\-Shift\-0
-Apply all tags to focused window.
+.B Mod\-Page_Down
+Cycle to next tag.
 .TP
-.B Super\-Control\-Shift\-[1..n]
-Add/remove nth tag to/from focused window.
+.B Mod\-Shift\-g, Mod\-Shift\-Page_Up
+Move client to previous tag.
 .TP
-.B Super\-[1..n]
-View all windows with nth tag.
+.B Mod\-Shift\-Page_Down
+Move client to next tag.
 .TP
-.B Super\-0
-View all windows with any tag.
+.B Mod\-Backslash
+View all tags.
+.SH GAPS
 .TP
-.B Super\-Control\-[1..n]
-Add/remove all windows with nth tag to/from the view.
+.B Mod\-a
+Toggle gaps on/off.
 .TP
-.B Super\-Shift\-q
+.B Mod\-Shift\-a
+Reset gaps to defaults.
+.TP
+.B Mod\-z
+Increase gaps by 3.
+.TP
+.B Mod\-x
+Decrease gaps by 3.
+.TP
+.B Mod\-Shift\-apostrophe
+Toggle smart gaps.
+.SH APPLICATION LAUNCHERS
+.TP
+.B Mod\-d
+App launcher (dmenu from apps list).
+.TP
+.B Mod\-Shift\-d
+Launch KeePassXC.
+.TP
+.B Mod\-w
+Launch zen.
+.TP
+.B Mod\-t
+Launch Tor Browser.
+.TP
+.B Mod\-v
+Launch editor (vim in terminal).
+.TP
+.B Mod\-Shift\-w
+Open browser bookmarks via dmenu.
+.TP
+.B Mod\-Shift\-o
+RSS reader via dmenu, open selection in browser.
+.TP
+.B Mod\-o
+Timer with dmenu.
+.TP
+.B Mod\-Shift\-e
+Launch abook (address book).
+.TP
+.B Mod\-r
+Launch termshark (requires being in sudoers file/root privileges).
+.TP
+.B Mod\-BackSpace, Mod\-Shift\-BackSpace
+System action menu (sysact).
+.TP
+.B Mod\-b
+Kill a process by name (dmenu).
+.TP
+.B Mod\-Shift\-b
+Set random wallpaper (feh).
+.TP
+.B Mod\-Shift\-z
+Launch goom visualizer.
+.TP
+.B Mod\-n
+Launch drawop.
+.TP
+.B Mod\-m
+Launch sv, a selector between different youtube channels(and selection of the video through invidious's RSS feed) opened up in inv.nadeko.net.
+.TP
+.B Mod\-Shift\-m
+Music player (mpv) selects using dmenu choosing from files from ~/Personal/Mus.
+.TP
+.B Mod\-Shift\-v
+Launch FCEUX NES emulator.
+.SH MEDIA CONTROLS
+.TP
+.B Mod\-minus, Mod\-Shift\-minus
+Volume up by 5% and 15%.
+.TP
+.B Mod\-plus, Mod\-Shift\-plus
+Volume down by 5% and 15%.
+.TP
+.B Mod\-Shift\-p
+Toggle pause song playing in mpv(via socket controls of /tmp/mpvsocket).
+.TP
+.B Mod\-Shift\-l
+Toggle loop in media playing in mpv(via socket controls of /tmp/mpvsocket)
+.TP
+.B Mod\-Shift\-n
+Next song playing in mpv(via socket controls of /tmp/mpvsocket).
+.TP
+.SH MULTIMEDIA KEYS (no modifier)
+.TP
+.B AudioMute
+Toggle mute.
+.TP
+.B AudioRaiseVolume
+Volume +5%.
+.TP
+.B AudioLowerVolume
+Volume \-5%.
+.TP
+.B AudioMicMute
+Toggle microphone mute.
+.TP
+.B Mod\-p
+Select bluetooth to connect to.
+.SH HELP
+.TP
+.B Mod\-F1
+Open this guide in terminal (man dwm-ui).
+.TP
+.B Mod\-Shift\-h
+Open this guide in terminal (man dwm-ui).
+.SH MISCELLANEOUS
+.TP
+.B Mod\-u
+Emoji picker (dmenu to xclip).
+
+.TP
+.B Mod\-Insert
+Snippet picker (dmenu to xdotool).
+.TP
+.B Mod\-F3
+Screenshot region (scrot \-s).
+.TP
+.B Mod\-F4
+Open alsamixer in terminal.
+.TP
+.B Mod\-F5
+Screen lock (alt config).
+.TP
+.B Mod\-F6
+Screen lock (default).
+.TP
+.B Mod\-F11
+Webcam viewer via mpv.
+.TP
+.B Mod\-Print
+Recording menu (dmenurecord).
+.TP
+.B Mod\-Shift\-Print, Mod\-Delete
+Kill recording (dmenurecord kill).
+.TP
+.B Mod\-Shift\-q
 Quit dwm.
 .TP
-.B Mod1\-Control\-Shift\-q
-Menu to refresh/quit/reboot/shutdown.
-.SS Mouse commands
+.B Mod\-Shift\-r
+Restart dwm.
+.SH MOUSE BINDINGS
 .TP
-.B Super\-Left click
-Move focused window while dragging. Tiled windows will be toggled to the floating state.
+.B Mod\-Button1 on client
+Move window (floats it).
 .TP
-.B Super\-Middle click
-Toggles focused window between floating and tiled state.
+.B Mod\-Button3 on client
+Resize window (floats it).
 .TP
-.B Super\-Right click
-Resize focused window while dragging. Tiled windows will be toggled to the floating state.
-.SH CUSTOMIZATION
-dwm is customized by creating a custom config.h and (re)compiling the source
-code. This keeps it fast, secure and simple.
+.B Mod\-Button2 on client
+Reset gaps to default.
+.TP
+.B Mod\-Button4 on client
+Increase gaps by 1.
+.TP
+.B Mod\-Button5 on client
+Decrease gaps by 1.
+.TP
+.B Button2 on win title
+Zoom (swap with master).
+.TP
+.B Button1..5 on status text
+Signal dwmblocks blocks 1..5.
+.TP
+.B Shift\-Button1 on status text
+Signal dwmblocks block 6.
+.TP
+.B Shift\-Button3 on status text
+Edit dwmblocks config.h in vim.
+.TP
+.B Button1 on tag
+View tag.
+.TP
+.B Button3 on tag
+Toggle tag view.
+.TP
+.B Mod\-Button1 on tag
+Tag client.
+.TP
+.B Mod\-Button3 on tag
+Toggle tag on client.
+.TP
+.B Button4/5 on tag
+Cycle tags.
+.TP
+.B Button2 on root
+Toggle bar visibility.
+.SH APPEARANCE
+.TP
+.B Font
+IosevkaTerm Nerd Font 13pt.
+.TP
+.B Border
+2px.
+.TP
+.B Window corners
+24px (picom compositor).
+.TP
+.B Bar
+Bottom.
+.TP
+.B Snap
+32px.
+.TP
+.B Default mfact
+0.55.
+.TP
+.B Colors
+Tokyo Night inspired palette (see config.h for hex values). Schemes: Norm, Sel, Mem, Ok, Err, Date, HDD.
 .SH SIGNALS
 .TP
-.B SIGHUP - 1
-Restart the dwm process.
+.B SIGHUP (1)
+Restart dwm.
 .TP
-.B SIGTERM - 15
-Cleanly terminate the dwm process.
+.B SIGTERM (15)
+Terminate dwm.
+.SH REQUIREMENTS
+The following external programs are required for full functionality:
+.TP 8
+.B Core
+st (terminal), dmenu (launcher), dwmblocks (status bar),
+picom (compositor), IosevkaTerm Nerd Font.
+.TP
+.B System
+pactl (volume), mpv (player), feh (wallpaper),
+scrot (screenshot), vim (editor), alsamixer.
+.TP
+.B Apps
+zen, Tor Browser, keepassxc, mupdf, fceux, abook,
+termshark, xclip, xdotool.
+.TP
+.B Custom scripts (\(ti/.local/bin/)
+m-apps (app launcher), timer_term, ws (url opener),
+hnrss_reader (RSS), img_select (wallpaper picker),
+goom (visualizer), drawop, sv (video browser),
+screenlock (lock screen), dmenurecord (recording),
+pauseallmpv, sysact (system menu). They can all be retrieved in 
+.I https://git.fdeb.xyz/fdebian/scripts.git
+
+.TP
+.B dwmblocks depends
+free, df, date, awk, tail, rev, cut, ip, ping.
+.SH FILES
+.I config.h
+\(em compile-time configuration.
 .SH SEE ALSO
+.BR dwm (1),
 .BR dmenu (1),
-.BR st (1)
-.SH ISSUES
-Java applications which use the XToolkit/XAWT backend may draw grey windows
-only. The XToolkit/XAWT backend breaks ICCCM-compliance in recent JDK 1.5 and early
-JDK 1.6 versions, because it assumes a reparenting window manager. Possible workarounds
-are using JDK 1.4 (which doesn't contain the XToolkit/XAWT backend) or setting the
-environment variable
-.BR AWT_TOOLKIT=MToolkit
-(to use the older Motif backend instead) or running
-.B xprop -root -f _NET_WM_NAME 32a -set _NET_WM_NAME LG3D
-or
-.B wmname LG3D
-(to pretend that a non-reparenting window manager is running that the
-XToolkit/XAWT backend can recognize) or when using OpenJDK setting the environment variable
-.BR _JAVA_AWT_WM_NONREPARENTING=1 .
-.SH BUGS
-Send all bug reports with a patch to hackers@suckless.org.
+.BR st (1),
+.BR dwmblocks (1)

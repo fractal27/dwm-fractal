@@ -12,7 +12,9 @@
 #define LAUNCH_TOR_BROWSER   SHCMD("m-apps launch start-tor-browser")
 #define MUS_PATH                   "~/Personal/Mus"
 #define MUS_PLAYER                 "mpv --no-video --input-ipc-server=/tmp/mpvsocket"
+#define PATH_TO_ALARM              "~/.alarms/beep.wav"
 #define PDF_VIEWER                 "mupdf"
+#define WIFI_DEV                   "wlan0"
 #define BIN_PREFIX                 "~/.local/bin/"
 #define MPV_VID0_FLAGS "--profile=low-latency" \
 	" --video-latency-hacks=yes" \
@@ -105,7 +107,7 @@ static Sp scratchpads[] = {
 };
 
 /* tagging */
-static const char *tags[] = { "term", "browse1", "browse2", "monitor", "5", "6", "7", "8", "9" };
+static const char *tags[] = { "term", "browse1", "browse2", "monitor", "5", "6", "7", "8", "H" };
 #ifndef NULL
 #define NULL 0
 #endif
@@ -136,12 +138,12 @@ static const Layout layouts[] = {
 	{ "[]=",	tile },	                /* Default: Master on left, slaves on right */
 	{ "TTT",	bstack },               /* Master on top, slaves on bottom */
 
-	// { "[\\]",	dwindle },              /* Decreasing in size right and leftward */
+	// { "[\\]",	dwindle },          /* Decreasing in size right and leftward */
 	// { "[D]",	deck },	                /* Master on left, slaves in monocle-like mode on right */
 
 	{ "[M]",	monocle },              /* All windows on top of eachother */
-	{ "|M|",	centeredmaster },               /* Master in middle, slaves on sides */
-	{ ">M>",	quadlayout },       /* Same but master floats */
+	{ "|M|",	centeredmaster },       /* Master in middle, slaves on sides */
+	{ ">M>",	quadlayout },       	/* All windows are disposed in a floating fashion that permits the scrolling through MOD + l/r arrow*/
 
 	{ "><>",	NULL },	                /* no layout function means floating behavior */
 	{ NULL,		NULL },
@@ -254,7 +256,11 @@ static const Key keys[] = {
 
     // { MODKEY,			    XK_Tab,        view,                   {0} },
 	{ MODKEY,			    XK_q,          killclient,             {0} },
-    { MODKEY,               XK_o,          spawn,                  SHCMD(BIN_PREFIX "timer_term -s -c \"$(echo | dmenu -p \"comment\" " SH_DMENU_FLAGS ")\" \"$(cat ~/.timers | dmenu "SH_DMENU_FLAGS" | cut -d \"#\" -f1 | xargs)\"") } ,
+    { MODKEY,               XK_o,          spawn,                  SHCMD("comment=$(echo | dmenu -p \"comment\" " SH_DMENU_FLAGS ");"
+																		"seconds=\"$(cat ~/.timers | dmenu "SH_DMENU_FLAGS" | cut -d \"#\" -f1 | xargs)\";"
+																		"bash -c 'exec -a \"TIMER:$1\" sleep \"$2\"' _ \"$comment\" \"$seconds\" &&" 
+																		MUS_PLAYER " " PATH_TO_ALARM "&&" 
+																		NOTIFY("$comment") ) } ,
     { MODKEY|ShiftMask,     XK_o,          spawn,                  SHCMD(BIN_PREFIX "ws \"$(" BIN_PREFIX "hnrss_reader | dmenu "SH_DMENU_FLAGS" | cut -d'|' -f2)\"") } ,
 	{ MODKEY|ShiftMask,	    XK_w,          spawn,                  SHCMD(BIN_PREFIX "ws $(dmenu " SH_DMENU_FLAGS " < ~/.websites)") },
 
@@ -265,20 +271,20 @@ static const Key keys[] = {
 	{ MODKEY,	            XK_p,          spawn,                  SHCMD("bluetoothctl connect $(echo 'devices' | bluetoothctl | grep ^Device | dmenu -p \"bluetooth connect\" | cut -d ' ' -f2)") },
 	{ MODKEY,			    XK_t,          spawn,                  LAUNCH_TOR_BROWSER },
 
-	{ MODKEY|ShiftMask,		XK_e,          spawn,                  SHCMD(TERMINAL " -e abook -C ~/.config/abook/abookrc --datafile ~/.config/abook/addressbook") },
+	{ MODKEY|ShiftMask,		XK_e,          spawn,                  SHCMD(TERMINAL " -e abook") },
 	{ MODKEY,			    XK_r,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "sudo", "termshark", NULL } } },
 
-	{ MODKEY,	    		XK_t,          setlayout,              {.v = &layouts[0]} }, /* tile */
+	// { MODKEY,	    		XK_t,      setlayout,              {.v = &layouts[0]} }, /* tile */
 	{ MODKEY|ShiftMask,	    XK_t,          setlayout,              {.v = &layouts[1]} }, /* bstack */
 	{ MODKEY|ShiftMask,		XK_u,          setlayout,              {.v = &layouts[2]} }, /* monocle */
 	{ MODKEY,			    XK_i,          setlayout,              {.v = &layouts[3]} }, /* centeredmaster */
 	{ MODKEY|ShiftMask,		XK_i,          setlayout,              {.v = &layouts[4]} }, /* quadlayout */
-	{ MODKEY,		        XK_e,          setlayout,              {.v = &layouts[5]} },
+	// { MODKEY,		        XK_e,          setlayout,              {.v = &layouts[5]} },
+	{ MODKEY,		        XK_e,          spawn,                  SHCMD("iwctl station "WIFI_DEV" scan && sleep .5 && iwctl station "WIFI_DEV" get-networks | dmenu "SH_DMENU_FLAGS" | cut -d ' ' -f2") },
 
 	{ MODKEY|ShiftMask,		XK_p,          spawn,                  SHCMD("result=$(" MPV_CMD("'{\"command\": [\"cycle\",\"pause\"]}\'") " | jq .error);" NOTIFY("pause:$result")) },
 	{ MODKEY|ShiftMask,		XK_n,          spawn,                  SHCMD("result=$(" MPV_CMD("'{\"command\": [\"playlist-next\"]}\'")   " | jq .error);" NOTIFY("next-playlist:$result")) },
 	{ MODKEY|ShiftMask,		XK_l,          spawn,                  SHCMD("result=$(" MPV_CMD("'{\"command\": [\"cycle\", \"loop\"]}\'") " | jq .error);" NOTIFY("loop:$result")) },
-	// { MODKEY|ShiftMask,     XK_backslash,  {"command": ["quit-watch-later"], "request_id": 1}
 	{ MODKEY,			    XK_backslash,  view,                   {0} },
 	/* { MODKEY|ShiftMask,		XK_backslash,  spawn,                  SHCMD("") }, */
 
@@ -307,12 +313,13 @@ static const Key keys[] = {
 	{ MODKEY,			XK_x,          incrgaps,               {.i = -3 } },
 	{ MODKEY,			XK_b,          spawn,                  SHCMD("kill -9 $(ps ax -o comm x -u $USER | tail -n +2 | dmenu | xargs pidof)")},
 	{ MODKEY|ShiftMask, XK_b,          spawn,                  SHCMD("feh --bg-fill $(" BIN_PREFIX "img_select ~/.wallpapers/*)")},
-	/* { MODKEY|ShiftMask,	XK_z,          spawn,                  SHCMD(BIN_PREFIX "goom") }, */
+	{ MODKEY|ShiftMask,	XK_z,          spawn,                  SHCMD(BIN_PREFIX "goom") },
 	{ MODKEY,			XK_n,          spawn,                  SHCMD(BIN_PREFIX "drawop") },
 	{ MODKEY,			XK_m,          spawn,                  SHCMD(BIN_PREFIX "sv") },
-	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("mus=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | grep -v '.py' | dmenu " SH_DMENU_FLAGS ");[ \"$mus\" != \"\" ] && " MUS_PLAYER " " MUS_PATH "/\"$mus\"") },
-	{ MODKEY,			XK_c,          spawn,                  SHCMD("tag=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | sed 's/_.*//' | tr ',' '\\n' | sort -u | dmenu -p \"Tag:\" " SH_DMENU_FLAGS ");[ -n \"$tag\" ] && { find " MUS_PATH " | grep -v '.sh' | grep -v '.py' | grep -E \"(^|,)$tag(,|_)\" | xargs -d '\\n' " MUS_PLAYER "; }") },
-	{ MODKEY|ShiftMask,	XK_c,          spawn,                  SHCMD("author=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | sed 's/.*_//;s/\\.[^.]*$//' | sort -u | dmenu -p \"Author:\" " SH_DMENU_FLAGS ");[ -n \"$author\" ] && { find " MUS_PATH " | grep -v '.sh' | grep -v '.py' | grep -F \"_${author}.\" | xargs -d '\\n' " MUS_PLAYER "; }") },
+	{ MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD(MUS_PLAYER " \"$(dmenu -r '" BIN_PREFIX "audio_search.sh " MUS_PATH " \"$1\"' | sed 's/.*→    //')\"") },
+	// { MODKEY|ShiftMask,	XK_m,          spawn,                  SHCMD("mus=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | grep -v '.py' | dmenu " SH_DMENU_FLAGS ");[ \"$mus\" != \"\" ] && " MUS_PLAYER " " MUS_PATH "/\"$mus\"") },
+	// { MODKEY,			XK_c,          spawn,                  SHCMD("tag=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | sed 's/_.*//' | tr ',' '\\n' | sort -u | dmenu -p \"Tag:\" " SH_DMENU_FLAGS ");[ -n \"$tag\" ] && { find " MUS_PATH " | grep -v '.sh' | grep -v '.py' | grep -E \"(^|,)$tag(,|_)\" | xargs -d '\\n' " MUS_PLAYER "; }") },
+	// { MODKEY|ShiftMask,	XK_c,          spawn,                  SHCMD("author=$(ls -1 --color=never " MUS_PATH " | grep -v '.sh' | sed 's/.*_//;s/\\.[^.]*$//' | sort -u | dmenu -p \"Author:\" " SH_DMENU_FLAGS ");[ -n \"$author\" ] && { find " MUS_PATH " | grep -v '.sh' | grep -v '.py' | grep -F \"_${author}.\" | xargs -d '\\n' " MUS_PLAYER "; }") },
 	{ MODKEY,	        XK_v,          spawn,                  {.v = change_cfgcmd } },
 	{ MODKEY|ShiftMask,	XK_v,          spawn,                  SHCMD("fceux "EMU_ROMS"/$(ls -1 -f " EMU_ROMS "| dmenu " SH_DMENU_FLAGS ")") },
 	{ MODKEY,			XK_Left,       focusprev,               {.i = 0 } },
@@ -324,9 +331,9 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,	XK_Page_Down,  shifttag,               { .i = +1 } },
 	{ MODKEY,			XK_Insert,     spawn,                  SHCMD("xdotool type $(grep -v '^#' ~/.local/share/larbs/snippets | dmenu -i -l 50 | cut -d' ' -f1)") },
 
-	{ MODKEY,			XK_F1,         spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "man", "dwm-ui", NULL } } },
-	{ MODKEY|ShiftMask,		XK_h,          spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "man", "dwm-ui", NULL } } },
-	{ MODKEY,			XK_F3,         spawn,                  {.v = (const char*[]){ "scrot", "-s", NULL } } },
+	{ MODKEY,			XK_F1,         spawn,                  {.v = (const char*[]){ TERMINAL, "-e", "man", "dwm", NULL } } },
+	{ MODKEY|ShiftMask,		XK_h,          spawn,              {.v = (const char*[]){ TERMINAL, "-e", "man", "dwm", NULL } } },
+	{ MODKEY,			XK_F3,         spawn,                  {.v = (const char*[]){ "scrot", "-fs", NULL } } },
 	{ MODKEY,			XK_F4,         spawn,                  SHCMD(TERMINAL " -e alsamixer; kill -44 $(pidof dwmblocks)") },
 	{ MODKEY,			XK_F5,         spawn,                  SHCMD(BIN_PREFIX "screenlock -c $HOME/.config/screenlock/config_alt") },
 	{ MODKEY,			XK_F6,         spawn,                  SHCMD(BIN_PREFIX "screenlock") },

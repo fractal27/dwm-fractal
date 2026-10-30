@@ -1137,6 +1137,7 @@ drawbar(Monitor *m)
 	int not_selected = 0;
 	for (i = 0; i < LENGTH(tags); i++) {
 		/* do not draw vacant tags */
+		if(i == 8) continue;
 		int is_tab_selected = m->tagset[m->seltags] & 1 << i;
 		if (!(occ & 1 << i || is_tab_selected)){
 			   not_selected++;
